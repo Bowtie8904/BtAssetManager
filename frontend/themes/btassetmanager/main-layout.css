@@ -1,0 +1,53 @@
+header vaadin-context-menu {
+  align-items: center;
+  display: flex;
+}
+
+header nav a:hover {
+  text-decoration: none;
+}
+
+header nav a[highlight] {
+  color: var(--lumo-primary-text-color);
+}
+
+header nav a::before,
+header nav a::after {
+  background-color: var(--lumo-contrast-60pct);
+  border-radius: var(--lumo-border-radius) var(--lumo-border-radius) 0 0;
+  bottom: 0;
+  content: "";
+  display: block;
+  height: 2px;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%) scale(0);
+  transform-origin: 50% 100%;
+  width: var(--lumo-size-s);
+  will-change: transform;
+}
+
+header nav a::before {
+  transition: 0.14s transform cubic-bezier(.12, .32, .54, 1);
+}
+
+header nav a::after {
+  box-shadow: 0 0 0 4px var(--lumo-primary-color);
+  opacity: 0.15;
+  transition: 0.15s 0.02s transform, 0.8s 0.17s opacity;
+}
+
+header nav a[highlight]::before,
+nav a[highlight]::after {
+  background-color: var(--lumo-primary-color);
+}
+
+header nav a[highlight]::before,
+header nav a[highlight]::after {
+  transform: translateX(-50%) scale(1);
+  transition-timing-function: cubic-bezier(.12, .32, .54, 1.5);
+}
+
+header nav a[highlight]:not([active])::after {
+  opacity: 0;
+}

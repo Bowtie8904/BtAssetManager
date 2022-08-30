@@ -14,6 +14,7 @@ public class AudioPlayer extends Component
     public AudioPlayer()
     {
         getElement().setAttribute("controls", true);
+        getElement().setAttribute("loop", "");
     }
 
     public void setSource(String path)
@@ -24,5 +25,10 @@ public class AudioPlayer extends Component
     public void setSource(AbstractStreamResource resource)
     {
         getElement().setAttribute("src", resource);
+    }
+
+    public void play()
+    {
+        getElement().callJsFunction("play");
     }
 }

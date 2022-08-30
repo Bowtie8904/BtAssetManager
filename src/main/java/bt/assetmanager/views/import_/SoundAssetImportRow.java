@@ -50,4 +50,15 @@ public class SoundAssetImportRow
     {
         this.relativePath = relativePath;
     }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (o instanceof SoundAssetImportRow)
+        {
+            return ((SoundAssetImportRow)o).getAbsolutePath().equalsIgnoreCase(this.absolutePath);
+        }
+
+        return false;
+    }
 }

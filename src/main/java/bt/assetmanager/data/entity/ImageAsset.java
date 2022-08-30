@@ -15,7 +15,6 @@ public class ImageAsset
     private Long id;
     private String path;
     private String fileName;
-    private String base64;
 
     @ManyToMany(cascade = CascadeType.DETACH)
     @JoinColumn(name = "tagId", referencedColumnName = "id")
@@ -59,15 +58,5 @@ public class ImageAsset
     public void setTags(List<Tag> tags)
     {
         this.tags = tags;
-    }
-
-    public String getBase64()
-    {
-        return base64;
-    }
-
-    public void setBase64(String base64)
-    {
-        this.base64 = base64;
     }
 }

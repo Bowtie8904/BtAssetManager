@@ -2,13 +2,8 @@ package bt.assetmanager.views.import_;
 
 import bt.assetmanager.components.AudioPlayer;
 import bt.assetmanager.components.ScrollTreeGrid;
-import bt.assetmanager.data.entity.ImageAsset;
-import bt.assetmanager.data.entity.ImageFileEnding;
-import bt.assetmanager.data.entity.SoundFileEnding;
-import bt.assetmanager.data.entity.Tag;
-import bt.assetmanager.data.service.ImageFileEndingRepository;
-import bt.assetmanager.data.service.SoundFileEndingRepository;
-import bt.assetmanager.data.service.TagService;
+import bt.assetmanager.data.entity.*;
+import bt.assetmanager.data.service.*;
 import bt.assetmanager.views.MainLayout;
 import bt.log.Log;
 import com.vaadin.flow.component.Component;
@@ -49,11 +44,14 @@ import java.util.stream.Collectors;
 @Uses(Icon.class)
 public class ImportView extends Div
 {
-    private static File lastSelectedDirectory;
+    private static File selectedOriginDirectory;
+    private static File selectedDestinationDirectory;
     private Grid<ImageAssetImportRow> imageGrid = new Grid<>(ImageAssetImportRow.class, false);
     private Grid<SoundAssetImportRow> soundGrid = new Grid<>(SoundAssetImportRow.class, false);
     private ImageFileEndingRepository imageFileEndingRepo;
     private SoundFileEndingRepository soundFileEndingRepo;
+    private ImageAssetRepository imageRepo;
+    private SoundAssetRepository soundRepo;
     private TagService tagService;
     private List<String> soundFileEndings;
     private List<String> imageFileEndings;
@@ -68,17 +66,20 @@ public class ImportView extends Div
     private TextField destinationTextField;
     private Button browseDestinationButton;
     private Button importButton;
-    private File selectedOriginDirectory;
-    private File selectedDestinationDirectory;
+    private AudioPlayer audioPlayer;
 
     @Autowired
     public ImportView(ImageFileEndingRepository imageFileEndingRepo,
                       SoundFileEndingRepository soundFileEndingRepo,
-                      TagService tagService)
+                      TagService tagService,
+                      ImageAssetRepository imageRepo,
+                      SoundAssetRepository soundRepo)
     {
         this.imageFileEndingRepo = imageFileEndingRepo;
         this.soundFileEndingRepo = soundFileEndingRepo;
         this.tagService = tagService;
+        this.imageRepo = imageRepo;
+        this.soundRepo = soundRepo;
 
         this.soundFileEndings = this.soundFileEndingRepo.findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList());
         this.imageFileEndings = this.imageFileEndingRepo.findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList());
@@ -96,7 +97,7 @@ public class ImportView extends Div
         createSoundGrid(innerSplitLayout);
 
         outerSplitLayout.addToPrimary(innerSplitLayout);
-        createEditorLayout(outerSplitLayout);
+        createImportLayout(outerSplitLayout);
 
         add(outerSplitLayout);
 
@@ -104,14 +105,9 @@ public class ImportView extends Div
         this.soundGrid.setItems(this.soundFiles);
     }
 
-    private void selectOriginDirectory(File additionalRoot)
+    private void selectOriginDirectory()
     {
         List<File> rootFiles = new ArrayList<>();
-
-        if (additionalRoot != null)
-        {
-            //rootFiles.add(additionalRoot);
-        }
 
         File[] drives = File.listRoots();
         if (drives != null && drives.length > 0)
@@ -164,7 +160,6 @@ public class ImportView extends Div
                 }
 
                 this.directoryTextField.setValue(file.getAbsolutePath());
-                lastSelectedDirectory = file.getParentFile();
                 this.selectedOriginDirectory = file;
                 dialog.close();
             }
@@ -200,14 +195,9 @@ public class ImportView extends Div
         dialog.open();
     }
 
-    private void selectDestinationDirectory(File additionalRoot)
+    private void selectDestinationDirectory()
     {
         List<File> rootFiles = new ArrayList<>();
-
-        if (additionalRoot != null)
-        {
-            rootFiles.add(additionalRoot);
-        }
 
         File[] drives = File.listRoots();
         if (drives != null && drives.length > 0)
@@ -260,7 +250,6 @@ public class ImportView extends Div
                 }
 
                 this.destinationTextField.setValue(file.getAbsolutePath());
-                lastSelectedDirectory = file.getParentFile();
                 this.selectedDestinationDirectory = file;
                 dialog.close();
             }
@@ -298,7 +287,7 @@ public class ImportView extends Div
         dialog.open();
     }
 
-    private void createEditorLayout(SplitLayout splitLayout)
+    private void createImportLayout(SplitLayout splitLayout)
     {
         Div editorLayoutDiv = new Div();
         editorLayoutDiv.setClassName("editor-layout");
@@ -311,7 +300,7 @@ public class ImportView extends Div
         this.directoryTextField = new TextField("Directory");
         this.directoryTextField.setEnabled(false);
         this.browseOriginButton = new Button("Browse");
-        this.browseOriginButton.addClickListener(e -> selectOriginDirectory(lastSelectedDirectory));
+        this.browseOriginButton.addClickListener(e -> selectOriginDirectory());
         this.imageFileEndingsTextField = new TextField("Image file endings (comma separated)");
         this.imageFileEndingsTextField.setValue(String.join(", ", this.imageFileEndings));
 
@@ -345,8 +334,9 @@ public class ImportView extends Div
 
         this.applyTagsTextField = new TextField("Apply these tags on import (comma separated)");
         this.destinationTextField = new TextField("Destination folder");
+        this.destinationTextField.setEnabled(false);
         this.browseDestinationButton = new Button("Browse");
-        this.browseDestinationButton.addClickListener(e -> selectDestinationDirectory(lastSelectedDirectory));
+        this.browseDestinationButton.addClickListener(e -> selectDestinationDirectory());
 
         Span span2 = new Span();
         span2.setHeight("50px");
@@ -373,27 +363,73 @@ public class ImportView extends Div
         span.setHeight("50px");
         editorDiv.add(new Hr(), span, this.importButton);
 
+        this.audioPlayer = new AudioPlayer();
+
+        span = new Span();
+        span.setHeight("30px");
+        editorDiv.add(new Hr(), span, this.audioPlayer);
+
         splitLayout.addToSecondary(editorLayoutDiv);
     }
 
     private void importFiles()
     {
+        if (this.selectedDestinationDirectory == null)
+        {
+            return;
+        }
+
         List<Tag> tags = new ArrayList<>();
 
         for (String tag : this.applyTagsTextField.getValue().trim().split(","))
         {
-            tags.add(this.tagService.obtainTag(tag));
+            tag = tag.trim();
+
+            if (!tag.isEmpty())
+            {
+                tags.add(this.tagService.obtainTag(tag));
+            }
         }
 
-        this.imageFiles.stream()
-                       .filter(ImageAssetImportRow::isShouldImport)
-                       .forEach(row -> {
-                           ImageAsset asset = new ImageAsset();
-                           asset.setTags(tags);
+        List<ImageAssetImportRow> selectedImages = this.imageFiles.stream()
+                                                                  .filter(ImageAssetImportRow::isShouldImport)
+                                                                  .collect(Collectors.toList());
 
-                           String newFilePath = this.selectedDestinationDirectory.getAbsolutePath() + row.getRelativePath();
-                           Log.info(newFilePath);
-                       });
+        for (ImageAssetImportRow row : selectedImages)
+        {
+            ImageAsset asset = new ImageAsset();
+            asset.setTags(tags);
+
+            String newFilePath = this.selectedDestinationDirectory.getAbsolutePath() + row.getRelativePath();
+            asset.setPath(newFilePath);
+            asset.setFileName(row.getFileName());
+
+            this.imageRepo.save(asset);
+
+            this.imageFiles.remove(row);
+        }
+
+        this.imageGrid.setItems(this.imageFiles);
+
+        List<SoundAssetImportRow> selectedSounds = this.soundFiles.stream()
+                                                                  .filter(SoundAssetImportRow::isShouldImport)
+                                                                  .collect(Collectors.toList());
+
+        for (SoundAssetImportRow row : selectedSounds)
+        {
+            SoundAsset asset = new SoundAsset();
+            asset.setTags(tags);
+
+            String newFilePath = this.selectedDestinationDirectory.getAbsolutePath() + row.getRelativePath();
+            asset.setPath(newFilePath);
+            asset.setFileName(row.getFileName());
+
+            this.soundRepo.save(asset);
+
+            this.soundFiles.remove(row);
+        }
+
+        this.soundGrid.setItems(this.soundFiles);
     }
 
     private void fillFileGrids(File root)
@@ -528,21 +564,24 @@ public class ImportView extends Div
 
         this.soundGrid.addColumn(new ComponentRenderer<>(
                                          row -> {
-                                             StreamResource soundResource = new StreamResource(row.getFileName() + "", () -> {
-                                                 try
-                                                 {
-                                                     return new FileInputStream(row.getAbsolutePath());
-                                                 }
-                                                 catch (final FileNotFoundException e)
-                                                 {
-                                                     return null;
-                                                 }
+                                             Button playButton = new Button("Play");
+                                             playButton.addClickListener(e -> {
+                                                 StreamResource soundResource = new StreamResource(row.getFileName() + "", () -> {
+                                                     try
+                                                     {
+                                                         return new FileInputStream(row.getAbsolutePath());
+                                                     }
+                                                     catch (final FileNotFoundException ex)
+                                                     {
+                                                         return null;
+                                                     }
+                                                 });
+
+                                                 this.audioPlayer.setSource(soundResource);
+                                                 this.audioPlayer.play();
                                              });
 
-                                             AudioPlayer player = new AudioPlayer();
-                                             player.setSource(soundResource);
-
-                                             return player;
+                                             return playButton;
                                          }
                                  )
         ).setHeader("").setKey("audio").setAutoWidth(true);

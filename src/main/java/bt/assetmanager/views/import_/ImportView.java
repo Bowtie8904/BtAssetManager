@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 public class ImportView extends Div
 {
     private static File selectedOriginDirectory;
-    private static File selectedDestinationDirectory;
+    private static File destinationDirectory = new File("./imported");
     private Grid<ImageAssetImportRow> imageGrid = new Grid<>(ImageAssetImportRow.class, false);
     private Grid<SoundAssetImportRow> soundGrid = new Grid<>(SoundAssetImportRow.class, false);
     private ImageFileEndingRepository imageFileEndingRepo;
@@ -64,8 +64,6 @@ public class ImportView extends Div
     private Button browseOriginButton;
     private Button searchButton;
     private TextField applyTagsTextField;
-    private TextField destinationTextField;
-    private Button browseDestinationButton;
     private Button importButton;
     private Checkbox copyParentFolder;
     private AudioPlayer audioPlayer;
@@ -197,98 +195,6 @@ public class ImportView extends Div
         dialog.open();
     }
 
-    private void selectDestinationDirectory()
-    {
-        List<File> rootFiles = new ArrayList<>();
-
-        File[] drives = File.listRoots();
-        if (drives != null && drives.length > 0)
-        {
-            for (File aDrive : drives)
-            {
-                rootFiles.add(aDrive);
-            }
-        }
-
-        File rootBase = rootFiles.get(0);
-
-        FilesystemData root = new FilesystemData(rootBase, false);
-        rootFiles.remove(0);
-        FilesystemDataProvider fileSystem = new FilesystemDataProvider(root);
-
-        for (File aRoot : rootFiles)
-        {
-            fileSystem.getTreeData().addRootItems(aRoot);
-        }
-
-        ScrollTreeGrid<File> tree = new ScrollTreeGrid<>();
-        tree.setDataProvider(fileSystem);
-        tree.addHierarchyColumn(file -> {
-            if (file.getName() != null && !file.getName().isEmpty())
-            {
-                return file.getName();
-            }
-            else
-            {
-                return FileSystemView.getFileSystemView().getSystemDisplayName(file);
-            }
-        }).setHeader("Name");
-
-        Dialog dialog = new Dialog();
-        dialog.setCloseOnOutsideClick(false);
-        dialog.setCloseOnEsc(false);
-
-        Button selectButton = new Button("Select");
-        selectButton.addClickListener(e -> {
-            Optional<File> selectedDirectory = tree.getSelectionModel().getFirstSelectedItem();
-
-            if (selectedDirectory.isPresent())
-            {
-                File file = selectedDirectory.get();
-
-                if (!file.isDirectory())
-                {
-                    file = file.getParentFile();
-                }
-
-                this.destinationTextField.setValue(file.getAbsolutePath());
-                this.selectedDestinationDirectory = file;
-                dialog.close();
-            }
-
-            this.importButton.setEnabled(this.selectedOriginDirectory != null);
-        });
-
-        Button closeButton = new Button("Close");
-        closeButton.addClickListener(e -> {
-            dialog.close();
-        });
-
-        tree.setWidth("750px");
-        tree.setHeight("500px");
-
-        dialog.add(tree);
-        dialog.add(selectButton);
-        dialog.add(closeButton);
-
-        if (this.selectedDestinationDirectory != null)
-        {
-            File parentDir = this.selectedDestinationDirectory.getParentFile();
-            List<File> parentDirs = new ArrayList<>();
-
-            while (parentDir != null)
-            {
-                parentDirs.add(0, parentDir);
-                parentDir = parentDir.getParentFile();
-            }
-
-            tree.expand(parentDirs);
-            tree.scrollToItem(this.selectedDestinationDirectory);
-        }
-
-        dialog.open();
-    }
-
     private void createImportLayout(SplitLayout splitLayout)
     {
         Div editorLayoutDiv = new Div();
@@ -338,11 +244,6 @@ public class ImportView extends Div
 
         this.copyParentFolder = new Checkbox("Copy parent folder to destination");
 
-        this.destinationTextField = new TextField("Destination folder");
-        this.destinationTextField.setEnabled(false);
-        this.browseDestinationButton = new Button("Browse");
-        this.browseDestinationButton.addClickListener(e -> selectDestinationDirectory());
-
         Span span2 = new Span();
         span2.setHeight("50px");
 
@@ -355,8 +256,6 @@ public class ImportView extends Div
                                                new Hr(),
                                                this.applyTagsTextField,
                                                this.copyParentFolder,
-                                               this.destinationTextField,
-                                               this.browseDestinationButton,
                                                span2
         };
 
@@ -380,7 +279,7 @@ public class ImportView extends Div
 
     private void importFiles()
     {
-        if (this.selectedDestinationDirectory == null)
+        if (this.destinationDirectory == null)
         {
             return;
         }
@@ -407,17 +306,20 @@ public class ImportView extends Div
             asset.setTags(tags);
 
             String newFilePath = "";
+            String newRelativePath = "";
 
             if (this.copyParentFolder.getValue())
             {
-                newFilePath = Paths.get(this.selectedDestinationDirectory.getAbsolutePath(), row.getParentFolderName(), row.getRelativePath()).toString();
+                newFilePath = Paths.get(this.destinationDirectory.getAbsolutePath(), row.getParentFolderName(), row.getRelativePath()).toString();
+                newRelativePath = Paths.get(row.getParentFolderName(), row.getRelativePath()).toString();
             }
             else
             {
-                newFilePath = Paths.get(this.selectedDestinationDirectory.getAbsolutePath(), row.getRelativePath()).toString();
+                newFilePath = Paths.get(this.destinationDirectory.getAbsolutePath(), row.getRelativePath()).toString();
+                newRelativePath = Paths.get(row.getRelativePath()).toString();
             }
 
-            asset.setPath(newFilePath);
+            asset.setPath(newRelativePath);
             asset.setFileName(row.getFileName());
 
             this.imageRepo.save(asset);
@@ -438,17 +340,20 @@ public class ImportView extends Div
             asset.setTags(tags);
 
             String newFilePath = "";
+            String newRelativePath = "";
 
             if (this.copyParentFolder.getValue())
             {
-                newFilePath = Paths.get(this.selectedDestinationDirectory.getAbsolutePath(), row.getParentFolderName(), row.getRelativePath()).toString();
+                newFilePath = Paths.get(this.destinationDirectory.getAbsolutePath(), row.getParentFolderName(), row.getRelativePath()).toString();
+                newRelativePath = Paths.get(row.getParentFolderName(), row.getRelativePath()).toString();
             }
             else
             {
-                newFilePath = Paths.get(this.selectedDestinationDirectory.getAbsolutePath(), row.getRelativePath()).toString();
+                newFilePath = Paths.get(this.destinationDirectory.getAbsolutePath(), row.getRelativePath()).toString();
+                newRelativePath = Paths.get(row.getRelativePath()).toString();
             }
 
-            asset.setPath(newFilePath);
+            asset.setPath(newRelativePath);
             asset.setFileName(row.getFileName());
 
             this.soundRepo.save(asset);

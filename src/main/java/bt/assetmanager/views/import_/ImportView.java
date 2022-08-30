@@ -1,10 +1,14 @@
 package bt.assetmanager.views.import_;
 
 import bt.assetmanager.components.AudioPlayer;
+import bt.assetmanager.components.ScrollTreeGrid;
+import bt.assetmanager.data.entity.ImageAsset;
 import bt.assetmanager.data.entity.ImageFileEnding;
 import bt.assetmanager.data.entity.SoundFileEnding;
+import bt.assetmanager.data.entity.Tag;
 import bt.assetmanager.data.service.ImageFileEndingRepository;
 import bt.assetmanager.data.service.SoundFileEndingRepository;
+import bt.assetmanager.data.service.TagService;
 import bt.assetmanager.views.MainLayout;
 import bt.log.Log;
 import com.vaadin.flow.component.Component;
@@ -23,7 +27,6 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.component.treegrid.TreeGrid;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -46,12 +49,12 @@ import java.util.stream.Collectors;
 @Uses(Icon.class)
 public class ImportView extends Div
 {
-    private static File lastSelectedOriginDirectory;
-    private static File lastSelectedDestinationDirectory;
+    private static File lastSelectedDirectory;
     private Grid<ImageAssetImportRow> imageGrid = new Grid<>(ImageAssetImportRow.class, false);
     private Grid<SoundAssetImportRow> soundGrid = new Grid<>(SoundAssetImportRow.class, false);
     private ImageFileEndingRepository imageFileEndingRepo;
     private SoundFileEndingRepository soundFileEndingRepo;
+    private TagService tagService;
     private List<String> soundFileEndings;
     private List<String> imageFileEndings;
     private List<SoundAssetImportRow> soundFiles;
@@ -63,17 +66,19 @@ public class ImportView extends Div
     private Button searchButton;
     private TextField applyTagsTextField;
     private TextField destinationTextField;
-    private Checkbox moveFilesAndFoldersCheckBox;
     private Button browseDestinationButton;
     private Button importButton;
     private File selectedOriginDirectory;
+    private File selectedDestinationDirectory;
 
     @Autowired
     public ImportView(ImageFileEndingRepository imageFileEndingRepo,
-                      SoundFileEndingRepository soundFileEndingRepo)
+                      SoundFileEndingRepository soundFileEndingRepo,
+                      TagService tagService)
     {
         this.imageFileEndingRepo = imageFileEndingRepo;
         this.soundFileEndingRepo = soundFileEndingRepo;
+        this.tagService = tagService;
 
         this.soundFileEndings = this.soundFileEndingRepo.findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList());
         this.imageFileEndings = this.imageFileEndingRepo.findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList());
@@ -99,13 +104,13 @@ public class ImportView extends Div
         this.soundGrid.setItems(this.soundFiles);
     }
 
-    private void selectDirectory(File additionalRoot)
+    private void selectOriginDirectory(File additionalRoot)
     {
         List<File> rootFiles = new ArrayList<>();
 
         if (additionalRoot != null)
         {
-            rootFiles.add(additionalRoot);
+            //rootFiles.add(additionalRoot);
         }
 
         File[] drives = File.listRoots();
@@ -128,7 +133,7 @@ public class ImportView extends Div
             fileSystem.getTreeData().addRootItems(aRoot);
         }
 
-        TreeGrid<File> tree = new TreeGrid<>();
+        ScrollTreeGrid<File> tree = new ScrollTreeGrid<>();
         tree.setDataProvider(fileSystem);
         tree.addHierarchyColumn(file -> {
             if (file.getName() != null && !file.getName().isEmpty())
@@ -159,11 +164,9 @@ public class ImportView extends Div
                 }
 
                 this.directoryTextField.setValue(file.getAbsolutePath());
-                lastSelectedOriginDirectory = file.getParentFile();
+                lastSelectedDirectory = file.getParentFile();
                 this.selectedOriginDirectory = file;
                 dialog.close();
-
-                Log.info(selectedDirectory.toString());
             }
         });
 
@@ -178,6 +181,119 @@ public class ImportView extends Div
         dialog.add(tree);
         dialog.add(selectButton);
         dialog.add(closeButton);
+
+        if (this.selectedOriginDirectory != null)
+        {
+            File parentDir = this.selectedOriginDirectory.getParentFile();
+            List<File> parentDirs = new ArrayList<>();
+
+            while (parentDir != null)
+            {
+                parentDirs.add(0, parentDir);
+                parentDir = parentDir.getParentFile();
+            }
+
+            tree.expand(parentDirs);
+            tree.scrollToItem(this.selectedOriginDirectory);
+        }
+
+        dialog.open();
+    }
+
+    private void selectDestinationDirectory(File additionalRoot)
+    {
+        List<File> rootFiles = new ArrayList<>();
+
+        if (additionalRoot != null)
+        {
+            rootFiles.add(additionalRoot);
+        }
+
+        File[] drives = File.listRoots();
+        if (drives != null && drives.length > 0)
+        {
+            for (File aDrive : drives)
+            {
+                rootFiles.add(aDrive);
+            }
+        }
+
+        File rootBase = rootFiles.get(0);
+
+        FilesystemData root = new FilesystemData(rootBase, false);
+        rootFiles.remove(0);
+        FilesystemDataProvider fileSystem = new FilesystemDataProvider(root);
+
+        for (File aRoot : rootFiles)
+        {
+            fileSystem.getTreeData().addRootItems(aRoot);
+        }
+
+        ScrollTreeGrid<File> tree = new ScrollTreeGrid<>();
+        tree.setDataProvider(fileSystem);
+        tree.addHierarchyColumn(file -> {
+            if (file.getName() != null && !file.getName().isEmpty())
+            {
+                return file.getName();
+            }
+            else
+            {
+                return FileSystemView.getFileSystemView().getSystemDisplayName(file);
+            }
+        }).setHeader("Name");
+
+        Dialog dialog = new Dialog();
+        dialog.setCloseOnOutsideClick(false);
+        dialog.setCloseOnEsc(false);
+
+        Button selectButton = new Button("Select");
+        selectButton.addClickListener(e -> {
+            Optional<File> selectedDirectory = tree.getSelectionModel().getFirstSelectedItem();
+
+            if (selectedDirectory.isPresent())
+            {
+                File file = selectedDirectory.get();
+
+                if (!file.isDirectory())
+                {
+                    file = file.getParentFile();
+                }
+
+                this.destinationTextField.setValue(file.getAbsolutePath());
+                lastSelectedDirectory = file.getParentFile();
+                this.selectedDestinationDirectory = file;
+                dialog.close();
+            }
+
+            this.importButton.setEnabled(this.selectedOriginDirectory != null);
+        });
+
+        Button closeButton = new Button("Close");
+        closeButton.addClickListener(e -> {
+            dialog.close();
+        });
+
+        tree.setWidth("750px");
+        tree.setHeight("500px");
+
+        dialog.add(tree);
+        dialog.add(selectButton);
+        dialog.add(closeButton);
+
+        if (this.selectedDestinationDirectory != null)
+        {
+            File parentDir = this.selectedDestinationDirectory.getParentFile();
+            List<File> parentDirs = new ArrayList<>();
+
+            while (parentDir != null)
+            {
+                parentDirs.add(0, parentDir);
+                parentDir = parentDir.getParentFile();
+            }
+
+            tree.expand(parentDirs);
+            tree.scrollToItem(this.selectedDestinationDirectory);
+        }
 
         dialog.open();
     }
@@ -195,9 +311,7 @@ public class ImportView extends Div
         this.directoryTextField = new TextField("Directory");
         this.directoryTextField.setEnabled(false);
         this.browseOriginButton = new Button("Browse");
-        this.browseOriginButton.addClickListener(e -> {
-            selectDirectory(lastSelectedOriginDirectory);
-        });
+        this.browseOriginButton.addClickListener(e -> selectOriginDirectory(lastSelectedDirectory));
         this.imageFileEndingsTextField = new TextField("Image file endings (comma separated)");
         this.imageFileEndingsTextField.setValue(String.join(", ", this.imageFileEndings));
 
@@ -206,8 +320,15 @@ public class ImportView extends Div
 
         Span span = new Span();
         span.setHeight("50px");
+
+        this.importButton = new Button("Import");
+        this.importButton.setEnabled(false);
+        this.importButton.addClickListener(e -> importFiles());
+
         this.searchButton = new Button("Search");
         this.searchButton.addClickListener(e -> {
+            this.importButton.setEnabled(false);
+
             replaceImageEndings();
             replaceSoundEndings();
 
@@ -218,13 +339,15 @@ public class ImportView extends Div
 
             this.imageGrid.setItems(this.imageFiles);
             this.soundGrid.setItems(this.soundFiles);
+
+            this.importButton.setEnabled(!this.imageFiles.isEmpty() || !this.soundFiles.isEmpty());
         });
 
         this.applyTagsTextField = new TextField("Apply these tags on import (comma separated)");
-        this.moveFilesAndFoldersCheckBox = new Checkbox("Move files and folders");
         this.destinationTextField = new TextField("Destination folder");
         this.browseDestinationButton = new Button("Browse");
-        this.importButton = new Button("Import");
+        this.browseDestinationButton.addClickListener(e -> selectDestinationDirectory(lastSelectedDirectory));
+
         Span span2 = new Span();
         span2.setHeight("50px");
 
@@ -236,7 +359,6 @@ public class ImportView extends Div
                                                this.searchButton,
                                                new Hr(),
                                                this.applyTagsTextField,
-                                               this.moveFilesAndFoldersCheckBox,
                                                this.destinationTextField,
                                                this.browseDestinationButton,
                                                span2
@@ -252,6 +374,26 @@ public class ImportView extends Div
         editorDiv.add(new Hr(), span, this.importButton);
 
         splitLayout.addToSecondary(editorLayoutDiv);
+    }
+
+    private void importFiles()
+    {
+        List<Tag> tags = new ArrayList<>();
+
+        for (String tag : this.applyTagsTextField.getValue().trim().split(","))
+        {
+            tags.add(this.tagService.obtainTag(tag));
+        }
+
+        this.imageFiles.stream()
+                       .filter(ImageAssetImportRow::isShouldImport)
+                       .forEach(row -> {
+                           ImageAsset asset = new ImageAsset();
+                           asset.setTags(tags);
+
+                           String newFilePath = this.selectedDestinationDirectory.getAbsolutePath() + row.getRelativePath();
+                           Log.info(newFilePath);
+                       });
     }
 
     private void fillFileGrids(File root)

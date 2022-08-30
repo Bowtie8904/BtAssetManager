@@ -34,6 +34,7 @@ import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -66,6 +67,7 @@ public class ImportView extends Div
     private TextField destinationTextField;
     private Button browseDestinationButton;
     private Button importButton;
+    private Checkbox copyParentFolder;
     private AudioPlayer audioPlayer;
 
     @Autowired
@@ -333,6 +335,9 @@ public class ImportView extends Div
         });
 
         this.applyTagsTextField = new TextField("Apply these tags on import (comma separated)");
+
+        this.copyParentFolder = new Checkbox("Copy parent folder to destination");
+
         this.destinationTextField = new TextField("Destination folder");
         this.destinationTextField.setEnabled(false);
         this.browseDestinationButton = new Button("Browse");
@@ -349,6 +354,7 @@ public class ImportView extends Div
                                                this.searchButton,
                                                new Hr(),
                                                this.applyTagsTextField,
+                                               this.copyParentFolder,
                                                this.destinationTextField,
                                                this.browseDestinationButton,
                                                span2
@@ -400,11 +406,22 @@ public class ImportView extends Div
             ImageAsset asset = new ImageAsset();
             asset.setTags(tags);
 
-            String newFilePath = this.selectedDestinationDirectory.getAbsolutePath() + row.getRelativePath();
+            String newFilePath = "";
+
+            if (this.copyParentFolder.getValue())
+            {
+                newFilePath = Paths.get(this.selectedDestinationDirectory.getAbsolutePath(), row.getParentFolderName(), row.getRelativePath()).toString();
+            }
+            else
+            {
+                newFilePath = Paths.get(this.selectedDestinationDirectory.getAbsolutePath(), row.getRelativePath()).toString();
+            }
+
             asset.setPath(newFilePath);
             asset.setFileName(row.getFileName());
 
             this.imageRepo.save(asset);
+            Log.debug("Saved image asset " + asset.getPath());
 
             this.imageFiles.remove(row);
         }
@@ -420,11 +437,22 @@ public class ImportView extends Div
             SoundAsset asset = new SoundAsset();
             asset.setTags(tags);
 
-            String newFilePath = this.selectedDestinationDirectory.getAbsolutePath() + row.getRelativePath();
+            String newFilePath = "";
+
+            if (this.copyParentFolder.getValue())
+            {
+                newFilePath = Paths.get(this.selectedDestinationDirectory.getAbsolutePath(), row.getParentFolderName(), row.getRelativePath()).toString();
+            }
+            else
+            {
+                newFilePath = Paths.get(this.selectedDestinationDirectory.getAbsolutePath(), row.getRelativePath()).toString();
+            }
+
             asset.setPath(newFilePath);
             asset.setFileName(row.getFileName());
 
             this.soundRepo.save(asset);
+            Log.debug("Saved sound asset " + asset.getPath());
 
             this.soundFiles.remove(row);
         }
@@ -452,6 +480,7 @@ public class ImportView extends Div
                         row.setFileName(file.getName());
                         row.setAbsolutePath(file.getAbsolutePath());
                         row.setRelativePath(file.getAbsolutePath().substring(this.selectedOriginDirectory.getAbsolutePath().length()));
+                        row.setParentFolderName(this.selectedOriginDirectory.getName());
                         this.imageFiles.add(row);
                     }
                     else if (this.soundFileEndings.contains(fileEnding.toLowerCase().trim()))
@@ -460,6 +489,7 @@ public class ImportView extends Div
                         row.setFileName(file.getName());
                         row.setAbsolutePath(file.getAbsolutePath());
                         row.setRelativePath(file.getAbsolutePath().substring(this.selectedOriginDirectory.getAbsolutePath().length()));
+                        row.setParentFolderName(this.selectedOriginDirectory.getName());
                         this.soundFiles.add(row);
                     }
                 }

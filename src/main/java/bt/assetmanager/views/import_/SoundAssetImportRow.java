@@ -4,7 +4,7 @@ package bt.assetmanager.views.import_;
  * @author Lukas Hartwig
  * @since 29.08.2022
  */
-public class ImageAssetImportRow
+public class SoundAssetImportRow
 {
     private boolean shouldImport;
     private String fileName;

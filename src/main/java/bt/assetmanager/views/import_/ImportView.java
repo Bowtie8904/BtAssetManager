@@ -1,8 +1,9 @@
 package bt.assetmanager.views.import_;
 
-import bt.assetmanager.data.entity.SamplePerson;
+import bt.assetmanager.components.AudioPlayer;
+import bt.assetmanager.data.entity.ImageFileEnding;
+import bt.assetmanager.data.entity.SoundFileEnding;
 import bt.assetmanager.data.service.ImageFileEndingRepository;
-import bt.assetmanager.data.service.SamplePersonService;
 import bt.assetmanager.data.service.SoundFileEndingRepository;
 import bt.assetmanager.views.MainLayout;
 import bt.log.Log;
@@ -10,74 +11,76 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
-import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dependency.Uses;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.BeanValidationBinder;
+import com.vaadin.flow.component.treegrid.TreeGrid;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.StreamResource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.vaadin.filesystemdataprovider.FilesystemData;
+import org.vaadin.filesystemdataprovider.FilesystemDataProvider;
 
+import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @PageTitle("Import")
 @Route(value = "import/:samplePersonID?/:action?(edit)", layout = MainLayout.class)
 @Uses(Icon.class)
-public class ImportView extends Div implements BeforeEnterObserver
+public class ImportView extends Div
 {
-    private final String SAMPLEPERSON_ID = "samplePersonID";
-    private final String SAMPLEPERSON_EDIT_ROUTE_TEMPLATE = "import/%s/edit";
-    private final SamplePersonService samplePersonService;
-    private Grid<SamplePerson> grid = new Grid<>(SamplePerson.class, false);
-    private TextField firstName;
-    private TextField lastName;
-    private TextField email;
-    private TextField phone;
-    private DatePicker dateOfBirth;
-    private TextField occupation;
-    private Checkbox important;
-    private Button cancel = new Button("Cancel");
-    private Button save = new Button("Save");
-    private BeanValidationBinder<SamplePerson> binder;
-    private SamplePerson samplePerson;
-
+    private static File lastSelectedOriginDirectory;
+    private static File lastSelectedDestinationDirectory;
     private Grid<ImageAssetImportRow> imageGrid = new Grid<>(ImageAssetImportRow.class, false);
+    private Grid<SoundAssetImportRow> soundGrid = new Grid<>(SoundAssetImportRow.class, false);
     private ImageFileEndingRepository imageFileEndingRepo;
     private SoundFileEndingRepository soundFileEndingRepo;
+    private List<String> soundFileEndings;
+    private List<String> imageFileEndings;
+    private List<SoundAssetImportRow> soundFiles;
+    private List<ImageAssetImportRow> imageFiles;
     private TextField directoryTextField;
     private TextField imageFileEndingsTextField;
     private TextField soundFileEndingsTextField;
-    private Button searchButton = new Button("Search");
+    private Button browseOriginButton;
+    private Button searchButton;
     private TextField applyTagsTextField;
+    private TextField destinationTextField;
+    private Checkbox moveFilesAndFoldersCheckBox;
+    private Button browseDestinationButton;
+    private Button importButton;
+    private File selectedOriginDirectory;
 
     @Autowired
-    public ImportView(SamplePersonService samplePersonService,
-                      ImageFileEndingRepository imageFileEndingRepo,
+    public ImportView(ImageFileEndingRepository imageFileEndingRepo,
                       SoundFileEndingRepository soundFileEndingRepo)
     {
-        this.samplePersonService = samplePersonService;
         this.imageFileEndingRepo = imageFileEndingRepo;
         this.soundFileEndingRepo = soundFileEndingRepo;
+
+        this.soundFileEndings = this.soundFileEndingRepo.findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList());
+        this.imageFileEndings = this.imageFileEndingRepo.findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList());
+
+        this.imageFiles = new ArrayList<>();
+        this.soundFiles = new ArrayList<>();
+
         addClassNames("import-view");
 
         // Create UI
@@ -92,6 +95,232 @@ public class ImportView extends Div implements BeforeEnterObserver
 
         add(outerSplitLayout);
 
+        this.imageGrid.setItems(this.imageFiles);
+        this.soundGrid.setItems(this.soundFiles);
+    }
+
+    private void selectDirectory(File additionalRoot)
+    {
+        List<File> rootFiles = new ArrayList<>();
+
+        if (additionalRoot != null)
+        {
+            rootFiles.add(additionalRoot);
+        }
+
+        File[] drives = File.listRoots();
+        if (drives != null && drives.length > 0)
+        {
+            for (File aDrive : drives)
+            {
+                rootFiles.add(aDrive);
+            }
+        }
+
+        File rootBase = rootFiles.get(0);
+
+        FilesystemData root = new FilesystemData(rootBase, false);
+        rootFiles.remove(0);
+        FilesystemDataProvider fileSystem = new FilesystemDataProvider(root);
+
+        for (File aRoot : rootFiles)
+        {
+            fileSystem.getTreeData().addRootItems(aRoot);
+        }
+
+        TreeGrid<File> tree = new TreeGrid<>();
+        tree.setDataProvider(fileSystem);
+        tree.addHierarchyColumn(file -> {
+            if (file.getName() != null && !file.getName().isEmpty())
+            {
+                return file.getName();
+            }
+            else
+            {
+                return FileSystemView.getFileSystemView().getSystemDisplayName(file);
+            }
+        }).setHeader("Name");
+
+        Dialog dialog = new Dialog();
+        dialog.setCloseOnOutsideClick(false);
+        dialog.setCloseOnEsc(false);
+
+        Button selectButton = new Button("Select");
+        selectButton.addClickListener(e -> {
+            Optional<File> selectedDirectory = tree.getSelectionModel().getFirstSelectedItem();
+
+            if (selectedDirectory.isPresent())
+            {
+                File file = selectedDirectory.get();
+
+                if (!file.isDirectory())
+                {
+                    file = file.getParentFile();
+                }
+
+                this.directoryTextField.setValue(file.getAbsolutePath());
+                lastSelectedOriginDirectory = file.getParentFile();
+                this.selectedOriginDirectory = file;
+                dialog.close();
+
+                Log.info(selectedDirectory.toString());
+            }
+        });
+
+        Button closeButton = new Button("Close");
+        closeButton.addClickListener(e -> {
+            dialog.close();
+        });
+
+        tree.setWidth("750px");
+        tree.setHeight("500px");
+
+        dialog.add(tree);
+        dialog.add(selectButton);
+        dialog.add(closeButton);
+
+        dialog.open();
+    }
+
+    private void createEditorLayout(SplitLayout splitLayout)
+    {
+        Div editorLayoutDiv = new Div();
+        editorLayoutDiv.setClassName("editor-layout");
+
+        Div editorDiv = new Div();
+        editorDiv.setClassName("editor");
+        editorLayoutDiv.add(editorDiv);
+
+        FormLayout formLayout = new FormLayout();
+        this.directoryTextField = new TextField("Directory");
+        this.directoryTextField.setEnabled(false);
+        this.browseOriginButton = new Button("Browse");
+        this.browseOriginButton.addClickListener(e -> {
+            selectDirectory(lastSelectedOriginDirectory);
+        });
+        this.imageFileEndingsTextField = new TextField("Image file endings (comma separated)");
+        this.imageFileEndingsTextField.setValue(String.join(", ", this.imageFileEndings));
+
+        this.soundFileEndingsTextField = new TextField("Sound file endings (comma separated)");
+        this.soundFileEndingsTextField.setValue(String.join(", ", this.soundFileEndings));
+
+        Span span = new Span();
+        span.setHeight("50px");
+        this.searchButton = new Button("Search");
+        this.searchButton.addClickListener(e -> {
+            replaceImageEndings();
+            replaceSoundEndings();
+
+            this.imageFiles.clear();
+            this.soundFiles.clear();
+
+            fillFileGrids(this.selectedOriginDirectory);
+
+            this.imageGrid.setItems(this.imageFiles);
+            this.soundGrid.setItems(this.soundFiles);
+        });
+
+        this.applyTagsTextField = new TextField("Apply these tags on import (comma separated)");
+        this.moveFilesAndFoldersCheckBox = new Checkbox("Move files and folders");
+        this.destinationTextField = new TextField("Destination folder");
+        this.browseDestinationButton = new Button("Browse");
+        this.importButton = new Button("Import");
+        Span span2 = new Span();
+        span2.setHeight("50px");
+
+        Component[] fields = new Component[] { this.directoryTextField,
+                                               this.browseOriginButton,
+                                               this.imageFileEndingsTextField,
+                                               this.soundFileEndingsTextField,
+                                               span,
+                                               this.searchButton,
+                                               new Hr(),
+                                               this.applyTagsTextField,
+                                               this.moveFilesAndFoldersCheckBox,
+                                               this.destinationTextField,
+                                               this.browseDestinationButton,
+                                               span2
+        };
+
+        formLayout.add(fields);
+        editorDiv.add(formLayout);
+
+        this.importButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        span = new Span();
+        span.setHeight("50px");
+        editorDiv.add(new Hr(), span, this.importButton);
+
+        splitLayout.addToSecondary(editorLayoutDiv);
+    }
+
+    private void fillFileGrids(File root)
+    {
+        for (File file : root.listFiles())
+        {
+            if (file.isDirectory())
+            {
+                fillFileGrids(file);
+            }
+            else
+            {
+                if (file.getName().lastIndexOf(".") > -1)
+                {
+                    String fileEnding = file.getName().substring(file.getName().lastIndexOf(".") + 1);
+
+                    if (this.imageFileEndings.contains(fileEnding.toLowerCase().trim()))
+                    {
+                        var row = new ImageAssetImportRow();
+                        row.setFileName(file.getName());
+                        row.setAbsolutePath(file.getAbsolutePath());
+                        row.setRelativePath(file.getAbsolutePath().substring(this.selectedOriginDirectory.getAbsolutePath().length()));
+                        this.imageFiles.add(row);
+                    }
+                    else if (this.soundFileEndings.contains(fileEnding.toLowerCase().trim()))
+                    {
+                        var row = new SoundAssetImportRow();
+                        row.setFileName(file.getName());
+                        row.setAbsolutePath(file.getAbsolutePath());
+                        row.setRelativePath(file.getAbsolutePath().substring(this.selectedOriginDirectory.getAbsolutePath().length()));
+                        this.soundFiles.add(row);
+                    }
+                }
+            }
+        }
+    }
+
+    private void replaceImageEndings()
+    {
+        this.imageFileEndingRepo.deleteAll();
+        String[] endings = this.imageFileEndingsTextField.getValue().split(",");
+
+        for (String ending : endings)
+        {
+            var imageEnding = new ImageFileEnding();
+            imageEnding.setEnding(ending.trim().toLowerCase());
+            this.imageFileEndingRepo.save(imageEnding);
+        }
+
+        this.imageFileEndings = this.imageFileEndingRepo.findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList());
+    }
+
+    private void replaceSoundEndings()
+    {
+        this.soundFileEndingRepo.deleteAll();
+        String[] endings = this.soundFileEndingsTextField.getValue().split(",");
+
+        for (String ending : endings)
+        {
+            var soundEnding = new SoundFileEnding();
+            soundEnding.setEnding(ending.trim().toLowerCase());
+            this.soundFileEndingRepo.save(soundEnding);
+        }
+
+        this.soundFileEndings = this.soundFileEndingRepo.findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList());
+    }
+
+    private void createImageGrid(SplitLayout splitLayout)
+    {
         this.imageGrid.addColumn(new ComponentRenderer<>(
                                          row -> {
                                              Checkbox checkbox = new Checkbox();
@@ -112,7 +341,7 @@ public class ImportView extends Div implements BeforeEnterObserver
                                              StreamResource imageResource = new StreamResource(row.getFileName() + "", () -> {
                                                  try
                                                  {
-                                                     return new FileInputStream(row.getPath());
+                                                     return new FileInputStream(row.getAbsolutePath());
                                                  }
                                                  catch (final FileNotFoundException e)
                                                  {
@@ -121,7 +350,7 @@ public class ImportView extends Div implements BeforeEnterObserver
                                              });
 
                                              Image image = new Image(imageResource, "Couldn't load image");
-                                             image.setHeight("30px");
+                                             image.setHeight("50px");
 
                                              return image;
                                          }
@@ -129,84 +358,9 @@ public class ImportView extends Div implements BeforeEnterObserver
         ).setHeader("").setKey("image");
 
         this.imageGrid.addColumn("fileName").setAutoWidth(true);
-        this.imageGrid.addColumn("path").setAutoWidth(true);
-        this.imageGrid.addColumn("size").setAutoWidth(true);
+        this.imageGrid.addColumn("relativePath").setAutoWidth(true);
         this.imageGrid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
 
-        File dir = new File("F:\\Workspace\\HealthRPG\\images\\equipment\\crimson_rogue");
-
-        List<ImageAssetImportRow> rows = Stream.of(dir.listFiles()).map(file -> {
-            ImageAssetImportRow row = new ImageAssetImportRow();
-            row.setPath(file.getAbsolutePath());
-            row.setFileName(file.getName());
-            return row;
-        }).collect(Collectors.toList());
-
-        this.imageGrid.setItems(rows);
-    }
-
-    @Override
-    public void beforeEnter(BeforeEnterEvent event)
-    {
-        Optional<UUID> samplePersonId = event.getRouteParameters().get(SAMPLEPERSON_ID).map(UUID::fromString);
-        if (samplePersonId.isPresent())
-        {
-            Optional<SamplePerson> samplePersonFromBackend = samplePersonService.get(samplePersonId.get());
-            if (samplePersonFromBackend.isPresent())
-            {
-                populateForm(samplePersonFromBackend.get());
-            }
-            else
-            {
-                Notification.show(
-                        String.format("The requested samplePerson was not found, ID = %s", samplePersonId.get()), 3000,
-                        Notification.Position.BOTTOM_START);
-                // when a row is selected but the data is no longer available,
-                // refresh grid
-                refreshGrid();
-                event.forwardTo(ImportView.class);
-            }
-        }
-    }
-
-    private void createEditorLayout(SplitLayout splitLayout)
-    {
-        Div editorLayoutDiv = new Div();
-        editorLayoutDiv.setClassName("editor-layout");
-
-        Div editorDiv = new Div();
-        editorDiv.setClassName("editor");
-        editorLayoutDiv.add(editorDiv);
-
-        FormLayout formLayout = new FormLayout();
-        firstName = new TextField("First Name");
-        lastName = new TextField("Last Name");
-        email = new TextField("Email");
-        phone = new TextField("Phone");
-        dateOfBirth = new DatePicker("Date Of Birth");
-        occupation = new TextField("Occupation");
-        important = new Checkbox("Important");
-        Component[] fields = new Component[] { firstName, lastName, email, phone, dateOfBirth, occupation, important };
-
-        formLayout.add(fields);
-        editorDiv.add(formLayout);
-        createButtonLayout(editorLayoutDiv);
-
-        splitLayout.addToSecondary(editorLayoutDiv);
-    }
-
-    private void createButtonLayout(Div editorLayoutDiv)
-    {
-        HorizontalLayout buttonLayout = new HorizontalLayout();
-        buttonLayout.setClassName("button-layout");
-        cancel.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-        save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        buttonLayout.add(save, cancel);
-        editorLayoutDiv.add(buttonLayout);
-    }
-
-    private void createImageGrid(SplitLayout splitLayout)
-    {
         Div wrapper = new Div();
         wrapper.setClassName("grid-wrapper");
         splitLayout.addToPrimary(wrapper);
@@ -215,27 +369,49 @@ public class ImportView extends Div implements BeforeEnterObserver
 
     private void createSoundGrid(SplitLayout splitLayout)
     {
+        this.soundGrid.addColumn(new ComponentRenderer<>(
+                                         row -> {
+                                             Checkbox checkbox = new Checkbox();
+                                             checkbox.setValue(row.isShouldImport());
+
+                                             checkbox.addValueChangeListener(event -> {
+                                                 row.setShouldImport(event.getValue());
+                                                 Log.info(row.getFileName() + " " + row.isShouldImport());
+                                             });
+
+                                             return checkbox;
+                                         }
+                                 )
+        ).setHeader("Import").setKey("shouldImport");
+
+        this.soundGrid.addColumn(new ComponentRenderer<>(
+                                         row -> {
+                                             StreamResource soundResource = new StreamResource(row.getFileName() + "", () -> {
+                                                 try
+                                                 {
+                                                     return new FileInputStream(row.getAbsolutePath());
+                                                 }
+                                                 catch (final FileNotFoundException e)
+                                                 {
+                                                     return null;
+                                                 }
+                                             });
+
+                                             AudioPlayer player = new AudioPlayer();
+                                             player.setSource(soundResource);
+
+                                             return player;
+                                         }
+                                 )
+        ).setHeader("").setKey("audio").setAutoWidth(true);
+
+        this.soundGrid.addColumn("fileName").setAutoWidth(true);
+        this.soundGrid.addColumn("relativePath").setAutoWidth(true);
+        this.soundGrid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
+
         Div wrapper = new Div();
         wrapper.setClassName("grid-wrapper");
         splitLayout.addToSecondary(wrapper);
-        wrapper.add(grid);
-    }
-
-    private void refreshGrid()
-    {
-        grid.select(null);
-        grid.getLazyDataView().refreshAll();
-    }
-
-    private void clearForm()
-    {
-        populateForm(null);
-    }
-
-    private void populateForm(SamplePerson value)
-    {
-        this.samplePerson = value;
-        binder.readBean(this.samplePerson);
-
+        wrapper.add(this.soundGrid);
     }
 }

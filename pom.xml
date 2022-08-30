@@ -51,6 +51,11 @@
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
         </repository>
+
+        <repository>
+            <id>vaadin-addons</id>
+            <url>https://maven.vaadin.com/vaadin-addons</url>
+        </repository>
     </repositories>
 
     <pluginRepositories>
@@ -181,6 +186,12 @@
             <groupId>com.github.Bowtie8904</groupId>
             <artifactId>BtCommons</artifactId>
             <version>ba8fe2d70f</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.vaadin.filesystemdataprovider</groupId>
+            <artifactId>filesystemdataprovider</artifactId>
+            <version>3.2.0</version>
         </dependency>
     </dependencies>
 

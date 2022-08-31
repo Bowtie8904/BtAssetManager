@@ -6,6 +6,7 @@ import bt.assetmanager.data.entity.*;
 import bt.assetmanager.data.service.*;
 import bt.assetmanager.views.MainLayout;
 import bt.log.Log;
+import com.vaadin.componentfactory.Autocomplete;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -33,8 +34,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @PageTitle("Import")
@@ -44,6 +49,7 @@ public class ImportView extends Div
 {
     private static File selectedOriginDirectory;
     private static File destinationDirectory = new File("./imported");
+    private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
     private Grid<ImageAssetImportRow> imageGrid = new Grid<>(ImageAssetImportRow.class, false);
     private Grid<SoundAssetImportRow> soundGrid = new Grid<>(SoundAssetImportRow.class, false);
     private ImageFileEndingRepository imageFileEndingRepo;
@@ -60,13 +66,15 @@ public class ImportView extends Div
     private TextField soundFileEndingsTextField;
     private Button browseOriginButton;
     private Button searchButton;
-    private TextField applyTagsTextField;
+    private Autocomplete applyTagsTextField;
     private Button importButton;
     private Checkbox copyParentFolder;
     private AudioPlayer audioPlayer;
     private Label outputLabel;
     private Label imageCountLabel;
     private Label soundCountLabel;
+    private volatile boolean processAutoCompleteApplyEvent = true;
+    private String currentTagTextFieldValue;
 
     @Autowired
     public ImportView(ImageFileEndingRepository imageFileEndingRepo,
@@ -224,6 +232,41 @@ public class ImportView extends Div
         this.imageCountLabel = new Label("0 images found");
         this.soundCountLabel = new Label("0 sounds found");
 
+        this.applyTagsTextField = new Autocomplete(4);
+        this.applyTagsTextField.setLabel("Apply these tags on import (comma separated)");
+        this.applyTagsTextField.addChangeListener(event -> {
+            String text = event.getValue();
+            String[] singleTags = text.split(",");
+
+            String currentTag = singleTags[singleTags.length - 1].trim();
+
+            if (!currentTag.isEmpty())
+            {
+                this.applyTagsTextField.setOptions(this.tagService.getTagNamesForValue(currentTag));
+            }
+            else
+            {
+                this.applyTagsTextField.setOptions(List.of());
+            }
+
+            this.currentTagTextFieldValue = event.getValue();
+        });
+
+        this.applyTagsTextField.addAutocompleteValueAppliedListener(e -> {
+            if (this.processAutoCompleteApplyEvent)
+            {
+                this.processAutoCompleteApplyEvent = false;
+
+                String[] singleTags = this.currentTagTextFieldValue.split(",");
+                List<String> newTagList = Arrays.asList(singleTags).stream().map(String::trim).collect(Collectors.toList());
+                newTagList.set(newTagList.size() - 1, e.getValue());
+
+                this.applyTagsTextField.setValue(String.join(", ", newTagList));
+
+                executorService.schedule(() -> this.processAutoCompleteApplyEvent = true, 200, TimeUnit.MILLISECONDS);
+            }
+        });
+
         this.searchButton = new Button("Search");
         this.searchButton.addClickListener(e -> {
             this.importButton.setEnabled(false);
@@ -243,9 +286,9 @@ public class ImportView extends Div
             this.soundGrid.setItems(this.soundFiles);
 
             this.importButton.setEnabled(!this.imageFiles.isEmpty() || !this.soundFiles.isEmpty());
-        });
 
-        this.applyTagsTextField = new TextField("Apply these tags on import (comma separated)");
+            this.applyTagsTextField.setValue("bla");
+        });
 
         this.outputLabel = new Label("Moving files to " + this.destinationDirectory.getAbsolutePath());
 

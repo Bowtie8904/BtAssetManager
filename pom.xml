@@ -193,6 +193,12 @@
             <artifactId>filesystemdataprovider</artifactId>
             <version>3.2.0</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.vaadin.componentfactory</groupId>
+            <artifactId>autocomplete</artifactId>
+            <version>2.3.2</version>
+        </dependency>
     </dependencies>
 
     <build>

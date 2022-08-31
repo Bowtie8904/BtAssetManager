@@ -17,5 +17,5 @@ public interface TagRepository extends JpaRepository<Tag, Long>
 
     public boolean existsByNameIgnoreCase(String name);
 
-    public List<Tag> findByNameContainingIgnoreCase(String name);
+    public List<Tag> findFirst5ByNameContainingIgnoreCase(String name);
 }

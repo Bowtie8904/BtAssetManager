@@ -2,6 +2,7 @@ package bt.assetmanager.views.import_;
 
 import bt.assetmanager.components.AudioPlayer;
 import bt.assetmanager.components.ScrollTreeGrid;
+import bt.assetmanager.constants.Constants;
 import bt.assetmanager.data.entity.*;
 import bt.assetmanager.data.service.*;
 import bt.assetmanager.views.MainLayout;
@@ -48,8 +49,8 @@ import java.util.stream.Collectors;
 public class ImportView extends Div
 {
     private static File selectedOriginDirectory;
-    private static File destinationDirectory = new File("./imported");
-    private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
+
+    private static ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
     private Grid<ImageAssetImportRow> imageGrid = new Grid<>(ImageAssetImportRow.class, false);
     private Grid<SoundAssetImportRow> soundGrid = new Grid<>(SoundAssetImportRow.class, false);
     private ImageFileEndingRepository imageFileEndingRepo;
@@ -288,18 +289,18 @@ public class ImportView extends Div
             this.importButton.setEnabled(!this.imageFiles.isEmpty() || !this.soundFiles.isEmpty());
         });
 
-        this.outputLabel = new Label("Moving files to " + this.destinationDirectory.getAbsolutePath());
+        this.outputLabel = new Label("Moving files to " + Constants.IMPORT_DIRECTORY.getAbsolutePath());
 
         this.copyParentFolder = new Checkbox("Copy parent folder to destination");
 
         this.copyParentFolder.addValueChangeListener(e -> {
             if (e.getValue() && selectedOriginDirectory != null)
             {
-                this.outputLabel.setText("Moving files to " + Paths.get(this.destinationDirectory.getAbsolutePath(), selectedOriginDirectory.getName()));
+                this.outputLabel.setText("Moving files to " + Paths.get(Constants.IMPORT_DIRECTORY.getAbsolutePath(), selectedOriginDirectory.getName()));
             }
             else
             {
-                this.outputLabel.setText("Moving files to " + this.destinationDirectory.getAbsolutePath());
+                this.outputLabel.setText("Moving files to " + Constants.IMPORT_DIRECTORY.getAbsolutePath());
             }
         });
 
@@ -344,7 +345,7 @@ public class ImportView extends Div
 
     private void importFiles()
     {
-        if (this.destinationDirectory == null)
+        if (Constants.IMPORT_DIRECTORY == null)
         {
             return;
         }
@@ -375,12 +376,12 @@ public class ImportView extends Div
 
             if (this.copyParentFolder.getValue())
             {
-                newFilePath = Paths.get(this.destinationDirectory.getAbsolutePath(), row.getParentFolderName(), row.getRelativePath()).toString();
+                newFilePath = Paths.get(Constants.IMPORT_DIRECTORY.getAbsolutePath(), row.getParentFolderName(), row.getRelativePath()).toString();
                 newRelativePath = Paths.get(row.getParentFolderName(), row.getRelativePath()).toString();
             }
             else
             {
-                newFilePath = Paths.get(this.destinationDirectory.getAbsolutePath(), row.getRelativePath()).toString();
+                newFilePath = Paths.get(Constants.IMPORT_DIRECTORY.getAbsolutePath(), row.getRelativePath()).toString();
                 newRelativePath = Paths.get(row.getRelativePath()).toString();
             }
 
@@ -409,12 +410,12 @@ public class ImportView extends Div
 
             if (this.copyParentFolder.getValue())
             {
-                newFilePath = Paths.get(this.destinationDirectory.getAbsolutePath(), row.getParentFolderName(), row.getRelativePath()).toString();
+                newFilePath = Paths.get(Constants.IMPORT_DIRECTORY.getAbsolutePath(), row.getParentFolderName(), row.getRelativePath()).toString();
                 newRelativePath = Paths.get(row.getParentFolderName(), row.getRelativePath()).toString();
             }
             else
             {
-                newFilePath = Paths.get(this.destinationDirectory.getAbsolutePath(), row.getRelativePath()).toString();
+                newFilePath = Paths.get(Constants.IMPORT_DIRECTORY.getAbsolutePath(), row.getRelativePath()).toString();
                 newRelativePath = Paths.get(row.getRelativePath()).toString();
             }
 

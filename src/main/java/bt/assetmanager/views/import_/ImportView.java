@@ -15,10 +15,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
-import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.Hr;
-import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -67,6 +64,9 @@ public class ImportView extends Div
     private Button importButton;
     private Checkbox copyParentFolder;
     private AudioPlayer audioPlayer;
+    private Label outputLabel;
+    private Label imageCountLabel;
+    private Label soundCountLabel;
 
     @Autowired
     public ImportView(ImageFileEndingRepository imageFileEndingRepo,
@@ -216,11 +216,13 @@ public class ImportView extends Div
         this.soundFileEndingsTextField.setValue(String.join(", ", this.soundFileEndings));
 
         Span span = new Span();
-        span.setHeight("50px");
+        span.setHeight("20px");
 
         this.importButton = new Button("Import");
         this.importButton.setEnabled(false);
         this.importButton.addClickListener(e -> importFiles());
+        this.imageCountLabel = new Label("0 images found");
+        this.soundCountLabel = new Label("0 sounds found");
 
         this.searchButton = new Button("Search");
         this.searchButton.addClickListener(e -> {
@@ -234,6 +236,9 @@ public class ImportView extends Div
 
             fillFileGrids(this.selectedOriginDirectory);
 
+            this.imageCountLabel.setText(this.imageFiles.size() + " images found");
+            this.soundCountLabel.setText(this.soundFiles.size() + " sounds found");
+
             this.imageGrid.setItems(this.imageFiles);
             this.soundGrid.setItems(this.soundFiles);
 
@@ -242,20 +247,39 @@ public class ImportView extends Div
 
         this.applyTagsTextField = new TextField("Apply these tags on import (comma separated)");
 
+        this.outputLabel = new Label("Moving files to " + this.destinationDirectory.getAbsolutePath());
+
         this.copyParentFolder = new Checkbox("Copy parent folder to destination");
+
+        this.copyParentFolder.addValueChangeListener(e -> {
+            if (e.getValue() && selectedOriginDirectory != null)
+            {
+                this.outputLabel.setText("Moving files to " + Paths.get(this.destinationDirectory.getAbsolutePath(), selectedOriginDirectory.getName()));
+            }
+            else
+            {
+                this.outputLabel.setText("Moving files to " + this.destinationDirectory.getAbsolutePath());
+            }
+        });
 
         Span span2 = new Span();
         span2.setHeight("50px");
+        Span span3 = new Span();
+        span3.setHeight("10px");
 
         Component[] fields = new Component[] { this.directoryTextField,
                                                this.browseOriginButton,
                                                this.imageFileEndingsTextField,
                                                this.soundFileEndingsTextField,
                                                span,
+                                               this.imageCountLabel,
+                                               this.soundCountLabel,
+                                               span3,
                                                this.searchButton,
                                                new Hr(),
                                                this.applyTagsTextField,
                                                this.copyParentFolder,
+                                               this.outputLabel,
                                                span2
         };
 

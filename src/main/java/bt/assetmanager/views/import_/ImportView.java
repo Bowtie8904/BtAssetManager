@@ -286,8 +286,6 @@ public class ImportView extends Div
             this.soundGrid.setItems(this.soundFiles);
 
             this.importButton.setEnabled(!this.imageFiles.isEmpty() || !this.soundFiles.isEmpty());
-
-            this.applyTagsTextField.setValue("bla");
         });
 
         this.outputLabel = new Label("Moving files to " + this.destinationDirectory.getAbsolutePath());

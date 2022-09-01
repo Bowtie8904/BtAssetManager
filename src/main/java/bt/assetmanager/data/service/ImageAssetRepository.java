@@ -25,4 +25,6 @@ public interface ImageAssetRepository extends JpaRepository<ImageAsset, Long>
     public List<ImageAsset> getAllForTags(@Param("tagNames") List<String> tagNames, @Param("size") Long size);
 
     public List<ImageAsset> findByFileNameContainingIgnoreCase(String fileName);
+
+    public boolean existsByPathIgnoreCase(String path);
 }

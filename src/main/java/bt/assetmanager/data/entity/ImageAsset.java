@@ -13,6 +13,7 @@ public class ImageAsset implements Asset
     @Id
     @GeneratedValue
     private Long id;
+
     @Column(length = 9999)
     private String path;
 

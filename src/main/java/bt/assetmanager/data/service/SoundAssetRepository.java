@@ -25,4 +25,6 @@ public interface SoundAssetRepository extends JpaRepository<SoundAsset, Long>
     public List<SoundAsset> getAllForTags(@Param("tagNames") List<String> tagNames, @Param("size") Long size);
 
     public List<SoundAsset> findByFileNameContainingIgnoreCase(String fileName);
+
+    public boolean existsByPathIgnoreCase(String path);
 }

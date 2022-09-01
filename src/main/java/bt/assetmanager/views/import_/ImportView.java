@@ -3,7 +3,6 @@ package bt.assetmanager.views.import_;
 import bt.assetmanager.components.AudioPlayer;
 import bt.assetmanager.components.ScrollTreeGrid;
 import bt.assetmanager.components.TagSearchTextField;
-import bt.assetmanager.constants.Constants;
 import bt.assetmanager.data.entity.*;
 import bt.assetmanager.data.service.*;
 import bt.assetmanager.views.MainLayout;
@@ -34,7 +33,6 @@ import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -65,9 +63,7 @@ public class ImportView extends Div
     private Button searchButton;
     private Autocomplete applyTagsTextField;
     private Button importButton;
-    private Checkbox copyParentFolder;
     private AudioPlayer audioPlayer;
-    private Label outputLabel;
     private Label imageCountLabel;
     private Label soundCountLabel;
     private volatile boolean processAutoCompleteApplyEvent = true;
@@ -252,22 +248,6 @@ public class ImportView extends Div
 
             this.importButton.setEnabled(!this.imageFiles.isEmpty() || !this.soundFiles.isEmpty());
         });
-
-        this.outputLabel = new Label("Moving files to " + Constants.IMPORT_DIRECTORY.getAbsolutePath());
-
-        this.copyParentFolder = new Checkbox("Copy parent folder to destination");
-
-        this.copyParentFolder.addValueChangeListener(e -> {
-            if (e.getValue() && selectedOriginDirectory != null)
-            {
-                this.outputLabel.setText("Moving files to " + Paths.get(Constants.IMPORT_DIRECTORY.getAbsolutePath(), selectedOriginDirectory.getName()));
-            }
-            else
-            {
-                this.outputLabel.setText("Moving files to " + Constants.IMPORT_DIRECTORY.getAbsolutePath());
-            }
-        });
-
         Span span2 = new Span();
         span2.setHeight("50px");
         Span span3 = new Span();
@@ -284,8 +264,6 @@ public class ImportView extends Div
                                                this.searchButton,
                                                new Hr(),
                                                this.applyTagsTextField,
-                                               this.copyParentFolder,
-                                               this.outputLabel,
                                                span2
         };
 
@@ -309,11 +287,6 @@ public class ImportView extends Div
 
     private void importFiles()
     {
-        if (Constants.IMPORT_DIRECTORY == null)
-        {
-            return;
-        }
-
         List<Tag> tags = new ArrayList<>();
 
         for (String tag : this.applyTagsTextField.getValue().trim().split(","))
@@ -340,21 +313,7 @@ public class ImportView extends Div
             ImageAsset asset = new ImageAsset();
             asset.setTags(tags);
 
-            String newFilePath = "";
-            String newRelativePath = "";
-
-            if (this.copyParentFolder.getValue())
-            {
-                newFilePath = Paths.get(Constants.IMPORT_DIRECTORY.getAbsolutePath(), row.getParentFolderName(), row.getRelativePath()).toString();
-                newRelativePath = Paths.get(row.getParentFolderName(), row.getRelativePath()).toString();
-            }
-            else
-            {
-                newFilePath = Paths.get(Constants.IMPORT_DIRECTORY.getAbsolutePath(), row.getRelativePath()).toString();
-                newRelativePath = Paths.get(row.getRelativePath()).toString();
-            }
-
-            asset.setPath(newRelativePath);
+            asset.setPath(row.getAbsolutePath());
             asset.setFileName(row.getFileName());
 
             this.imageRepo.save(asset);
@@ -374,21 +333,7 @@ public class ImportView extends Div
             SoundAsset asset = new SoundAsset();
             asset.setTags(tags);
 
-            String newFilePath = "";
-            String newRelativePath = "";
-
-            if (this.copyParentFolder.getValue())
-            {
-                newFilePath = Paths.get(Constants.IMPORT_DIRECTORY.getAbsolutePath(), row.getParentFolderName(), row.getRelativePath()).toString();
-                newRelativePath = Paths.get(row.getParentFolderName(), row.getRelativePath()).toString();
-            }
-            else
-            {
-                newFilePath = Paths.get(Constants.IMPORT_DIRECTORY.getAbsolutePath(), row.getRelativePath()).toString();
-                newRelativePath = Paths.get(row.getRelativePath()).toString();
-            }
-
-            asset.setPath(newRelativePath);
+            asset.setPath(row.getAbsolutePath());
             asset.setFileName(row.getFileName());
 
             this.soundRepo.save(asset);

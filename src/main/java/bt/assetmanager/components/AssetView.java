@@ -1,10 +1,10 @@
 package bt.assetmanager.components;
 
-import bt.assetmanager.constants.Constants;
 import bt.assetmanager.data.entity.Asset;
 import bt.assetmanager.data.entity.ImageAsset;
 import bt.assetmanager.data.service.AssetService;
 import bt.assetmanager.data.service.TagService;
+import bt.log.Log;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -16,7 +16,6 @@ import com.vaadin.flow.server.StreamResource;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.nio.file.Path;
 
 /**
  * @author Lukas Hartwig
@@ -65,13 +64,14 @@ public class AssetView<T extends Asset> extends SplitLayout
         {
             this.grid.addColumn(new ComponentRenderer<>(
                                         row -> {
-                                            StreamResource imageResource = new StreamResource(row.getPath() + "", () -> {
+                                            StreamResource imageResource = new StreamResource(row.getFileName() + "", () -> {
                                                 try
                                                 {
-                                                    return new FileInputStream(Path.of(Constants.IMPORT_DIRECTORY.getAbsolutePath(), row.getPath()).toString());
+                                                    return new FileInputStream(row.getPath());
                                                 }
                                                 catch (final FileNotFoundException e)
                                                 {
+                                                    Log.error("", e);
                                                     return null;
                                                 }
                                             });

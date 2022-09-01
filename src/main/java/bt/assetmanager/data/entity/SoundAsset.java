@@ -13,7 +13,11 @@ public class SoundAsset implements Asset
     @Id
     @GeneratedValue
     private Long id;
+    
+    @Column(length = 9999)
     private String path;
+
+    @Column(length = 9999)
     private String fileName;
 
     @ManyToMany(cascade = CascadeType.DETACH, fetch = FetchType.EAGER)

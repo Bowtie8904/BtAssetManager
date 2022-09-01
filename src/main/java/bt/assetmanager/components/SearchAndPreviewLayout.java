@@ -1,6 +1,5 @@
 package bt.assetmanager.components;
 
-import bt.assetmanager.constants.Constants;
 import bt.assetmanager.data.entity.Asset;
 import bt.assetmanager.data.entity.ImageAsset;
 import bt.assetmanager.data.entity.Tag;
@@ -20,7 +19,6 @@ import com.vaadin.flow.server.StreamResource;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -60,10 +58,10 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
     {
         this.currentlySelectedElement = element;
 
-        StreamResource resource = new StreamResource(this.currentlySelectedElement.getPath() + "", () -> {
+        StreamResource resource = new StreamResource(this.currentlySelectedElement.getFileName() + "", () -> {
             try
             {
-                return new FileInputStream(Path.of(Constants.IMPORT_DIRECTORY.getAbsolutePath(), this.currentlySelectedElement.getPath()).toString());
+                return new FileInputStream(this.currentlySelectedElement.getPath());
             }
             catch (final FileNotFoundException e)
             {

@@ -13,4 +13,6 @@ public interface Asset
     public void setTags(List<Tag> tags);
 
     public String getPath();
+
+    public String getFileName();
 }

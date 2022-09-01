@@ -13,18 +13,18 @@
   height: 100%;
 }
 
-.sounds-view .editor-layout {
+.sounds-view .input-layout {
   display: flex;
   flex-direction: column;
   width: 400px;
 }
 
-.sounds-view .editor {
+.sounds-view .input {
   flex-grow: 1;
   padding: var(--lumo-space-l);
 }
 
-.sounds-view .editor vaadin-checkbox {
+.sounds-view .input vaadin-checkbox {
   padding-top: var(--lumo-space-m);
 }
 

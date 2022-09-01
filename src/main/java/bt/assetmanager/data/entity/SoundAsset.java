@@ -16,7 +16,7 @@ public class SoundAsset implements Asset
     private String path;
     private String fileName;
 
-    @ManyToMany(cascade = CascadeType.DETACH)
+    @ManyToMany(cascade = CascadeType.DETACH, fetch = FetchType.EAGER)
     @JoinColumn(name = "tagId", referencedColumnName = "id")
     private List<Tag> tags;
 

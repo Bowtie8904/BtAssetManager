@@ -83,6 +83,14 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
         this.tagList.setItems(this.currentlySelectedElement.getTags().stream().map(Tag::getName));
     }
 
+    public void playSound()
+    {
+        if (this.audioPlayer != null)
+        {
+            this.audioPlayer.play();
+        }
+    }
+
     public void onSearch(Consumer<List<T>> consumer)
     {
         this.onSearchConsumer = consumer;

@@ -1,6 +1,7 @@
 package bt.assetmanager.data.service;
 
 import bt.assetmanager.data.entity.SoundAsset;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,27 +13,30 @@ import java.util.List;
 @Service
 public class SoundAssetService implements AssetService<SoundAsset>
 {
+    @Autowired
+    private SoundAssetRepository soundAssetRepo;
+
     @Override
     public List<SoundAsset> findByTags(List<String> tags)
     {
-        return null;
+        return this.soundAssetRepo.getAllForTags(tags, (long)tags.size());
     }
 
     @Override
     public List<SoundAsset> findByFileName(String fileName)
     {
-        return null;
+        return this.soundAssetRepo.findByFileNameContainingIgnoreCase(fileName);
     }
 
     @Override
     public void save(SoundAsset entity)
     {
-
+        this.soundAssetRepo.save(entity);
     }
 
     @Override
     public List<SoundAsset> findAll()
     {
-        return null;
+        return this.soundAssetRepo.findAll();
     }
 }

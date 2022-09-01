@@ -41,7 +41,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @PageTitle("Import")
-@Route(value = "import/:samplePersonID?/:action?(edit)", layout = MainLayout.class)
+@Route(value = "import", layout = MainLayout.class)
 @Uses(Icon.class)
 public class ImportView extends Div
 {

@@ -234,7 +234,7 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
             }
         }
 
-        this.foundFilesLabel.setText(resultSet.size() + " found files");
+        this.foundFilesLabel.setText(resultSet.size() + " files found");
 
         if (this.onSearchConsumer != null)
         {

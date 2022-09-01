@@ -34,6 +34,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -44,7 +45,8 @@ import java.util.stream.Collectors;
 public class ImportView extends Div
 {
     private static File selectedOriginDirectory;
-
+    private TempImageAssetRepository tempImageRepo;
+    private TempSoundAssetRepository tempSoundRepo;
     private Grid<ImageAssetImportRow> imageGrid = new Grid<>(ImageAssetImportRow.class, false);
     private Grid<SoundAssetImportRow> soundGrid = new Grid<>(SoundAssetImportRow.class, false);
     private ImageFileEndingRepository imageFileEndingRepo;
@@ -74,13 +76,17 @@ public class ImportView extends Div
                       SoundFileEndingRepository soundFileEndingRepo,
                       TagService tagService,
                       ImageAssetRepository imageRepo,
-                      SoundAssetRepository soundRepo)
+                      SoundAssetRepository soundRepo,
+                      TempImageAssetRepository tempImageRepo,
+                      TempSoundAssetRepository tempSoundRepo)
     {
         this.imageFileEndingRepo = imageFileEndingRepo;
         this.soundFileEndingRepo = soundFileEndingRepo;
         this.tagService = tagService;
         this.imageRepo = imageRepo;
         this.soundRepo = soundRepo;
+        this.tempImageRepo = tempImageRepo;
+        this.tempSoundRepo = tempSoundRepo;
 
         this.soundFileEndings = this.soundFileEndingRepo.findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList());
         this.imageFileEndings = this.imageFileEndingRepo.findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList());
@@ -238,7 +244,34 @@ public class ImportView extends Div
             this.imageFiles.clear();
             this.soundFiles.clear();
 
-            fillFileGrids(this.selectedOriginDirectory);
+            List<TempImageAsset> tempImageFiles = new LinkedList<>();
+            List<TempSoundAsset> tempSoundFiles = new LinkedList<>();
+            fillFileGrids(this.selectedOriginDirectory, tempImageFiles, tempSoundFiles);
+
+            this.tempImageRepo.saveAll(tempImageFiles);
+            this.tempSoundRepo.saveAll(tempSoundFiles);
+
+            tempImageFiles = this.tempImageRepo.getAllNonExisting();
+            tempSoundFiles = this.tempSoundRepo.getAllNonExisting();
+
+            this.imageFiles = tempImageFiles.parallelStream().map(temp -> {
+                var row = new ImageAssetImportRow();
+                row.setFileName(temp.getFileName());
+                row.setAbsolutePath(temp.getPath());
+                row.setRelativePath(temp.getPath().substring(this.selectedOriginDirectory.getAbsolutePath().length()));
+                return row;
+            }).collect(Collectors.toList());
+
+            this.soundFiles = tempSoundFiles.parallelStream().map(temp -> {
+                var row = new SoundAssetImportRow();
+                row.setFileName(temp.getFileName());
+                row.setAbsolutePath(temp.getPath());
+                row.setRelativePath(temp.getPath().substring(this.selectedOriginDirectory.getAbsolutePath().length()));
+                return row;
+            }).collect(Collectors.toList());
+
+            this.tempImageRepo.deleteAll();
+            this.tempSoundRepo.deleteAll();
 
             this.imageCountLabel.setText(this.imageFiles.size() + " images found");
             this.soundCountLabel.setText(this.soundFiles.size() + " sounds found");
@@ -345,13 +378,13 @@ public class ImportView extends Div
         this.soundGrid.setItems(this.soundFiles);
     }
 
-    private void fillFileGrids(File root)
+    private void fillFileGrids(File root, List<TempImageAsset> tempImageFiles, List<TempSoundAsset> tempSoundFiles)
     {
         for (File file : root.listFiles())
         {
             if (file.isDirectory())
             {
-                fillFileGrids(file);
+                fillFileGrids(file, tempImageFiles, tempSoundFiles);
             }
             else
             {
@@ -361,21 +394,18 @@ public class ImportView extends Div
 
                     if (this.imageFileEndings.contains(fileEnding.toLowerCase().trim()))
                     {
-                        var row = new ImageAssetImportRow();
-                        row.setFileName(file.getName());
-                        row.setAbsolutePath(file.getAbsolutePath());
-                        row.setRelativePath(file.getAbsolutePath().substring(this.selectedOriginDirectory.getAbsolutePath().length()));
-                        row.setParentFolderName(this.selectedOriginDirectory.getName());
-                        this.imageFiles.add(row);
+                        var asset = new TempImageAsset();
+                        asset.setPath(file.getAbsolutePath());
+                        asset.setFileName(file.getName());
+                        tempImageFiles.add(asset);
                     }
                     else if (this.soundFileEndings.contains(fileEnding.toLowerCase().trim()))
                     {
-                        var row = new SoundAssetImportRow();
-                        row.setFileName(file.getName());
-                        row.setAbsolutePath(file.getAbsolutePath());
-                        row.setRelativePath(file.getAbsolutePath().substring(this.selectedOriginDirectory.getAbsolutePath().length()));
-                        row.setParentFolderName(this.selectedOriginDirectory.getName());
-                        this.soundFiles.add(row);
+                        var asset = new TempSoundAsset();
+                        asset.setPath(file.getAbsolutePath());
+                        asset.setFileName(file.getName());
+                        tempSoundFiles.add(asset);
+
                     }
                 }
             }

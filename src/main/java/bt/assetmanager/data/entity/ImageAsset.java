@@ -14,7 +14,7 @@ public class ImageAsset implements Asset
     @GeneratedValue
     private Long id;
 
-    @Column(length = 9999)
+    @Column(length = 9999, unique = true)
     private String path;
 
     @Column(length = 9999)

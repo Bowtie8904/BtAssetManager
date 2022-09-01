@@ -10,7 +10,6 @@ public class SoundAssetImportRow
     private String fileName;
     private String absolutePath;
     private String relativePath;
-    private String parentFolderName;
 
     public boolean isShouldImport()
     {
@@ -50,16 +49,6 @@ public class SoundAssetImportRow
     public void setRelativePath(String relativePath)
     {
         this.relativePath = relativePath;
-    }
-
-    public String getParentFolderName()
-    {
-        return parentFolderName;
-    }
-
-    public void setParentFolderName(String parentFolderName)
-    {
-        this.parentFolderName = parentFolderName;
     }
 
     @Override

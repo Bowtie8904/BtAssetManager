@@ -35,6 +35,9 @@ public class Application extends SpringBootServletInitializer implements AppShel
         // disable logging system to force spring into using SLF4J binding
         System.setProperty(LoggingSystem.SYSTEM_PROPERTY, "none");
 
+        // making Desktop class work to open file locations
+        System.setProperty("java.awt.headless", "false");
+
         LoggerConfiguration config = new LoggerConfiguration().level(Level.FINE)
                                                               .invalidCallerPackages("org.apache.commons.logging",
                                                                                      "org.springframework.boot.autoconfigure.logging",

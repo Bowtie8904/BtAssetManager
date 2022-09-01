@@ -13,18 +13,18 @@
   height: 100%;
 }
 
-.import-view .editor-layout {
+.import-view .input-layout {
   display: flex;
   flex-direction: column;
   width: 400px;
 }
 
-.import-view .editor {
+.import-view .input {
   flex-grow: 1;
   padding: var(--lumo-space-l);
 }
 
-.import-view .editor vaadin-checkbox {
+.import-view .input vaadin-checkbox {
   padding-top: var(--lumo-space-m);
 }
 

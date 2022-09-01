@@ -8,15 +8,18 @@ import java.util.List;
  * @since 28.08.2022
  */
 @Entity
-public class ImageAsset
+public class ImageAsset implements Asset
 {
     @Id
     @GeneratedValue
     private Long id;
+    @Column(length = 9999)
     private String path;
+
+    @Column(length = 9999)
     private String fileName;
 
-    @ManyToMany(cascade = CascadeType.DETACH)
+    @ManyToMany(cascade = CascadeType.DETACH, fetch = FetchType.EAGER)
     @JoinColumn(name = "tagId", referencedColumnName = "id")
     private List<Tag> tags;
 

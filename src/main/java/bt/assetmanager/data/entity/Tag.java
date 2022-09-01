@@ -15,7 +15,7 @@ public class Tag
     @Id
     @GeneratedValue
     private Long id;
-    
+
     @Column(unique = true)
     private String name;
 
@@ -37,5 +37,20 @@ public class Tag
     public void setName(String name)
     {
         this.name = name;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (o instanceof Tag)
+        {
+            return ((Tag)o).getName().equalsIgnoreCase(this.name);
+        }
+        else if (o instanceof String)
+        {
+            return ((String)o).equalsIgnoreCase(this.name);
+        }
+
+        return false;
     }
 }

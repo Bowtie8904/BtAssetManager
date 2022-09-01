@@ -8,7 +8,7 @@ import java.util.List;
  * @since 28.08.2022
  */
 @Entity
-public class SoundAsset
+public class SoundAsset implements Asset
 {
     @Id
     @GeneratedValue

@@ -6,7 +6,7 @@ package bt.assetmanager.views.import_;
  */
 public class ImageAssetImportRow
 {
-    private boolean shouldImport;
+    private boolean shouldImport = true;
     private String fileName;
     private String absolutePath;
     private String relativePath;

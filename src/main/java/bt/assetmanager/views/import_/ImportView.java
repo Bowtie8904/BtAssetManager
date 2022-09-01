@@ -2,6 +2,7 @@ package bt.assetmanager.views.import_;
 
 import bt.assetmanager.components.AudioPlayer;
 import bt.assetmanager.components.ScrollTreeGrid;
+import bt.assetmanager.components.TagSearchTextField;
 import bt.assetmanager.constants.Constants;
 import bt.assetmanager.data.entity.*;
 import bt.assetmanager.data.service.*;
@@ -35,12 +36,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @PageTitle("Import")
@@ -50,7 +47,6 @@ public class ImportView extends Div
 {
     private static File selectedOriginDirectory;
 
-    private static ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
     private Grid<ImageAssetImportRow> imageGrid = new Grid<>(ImageAssetImportRow.class, false);
     private Grid<SoundAssetImportRow> soundGrid = new Grid<>(SoundAssetImportRow.class, false);
     private ImageFileEndingRepository imageFileEndingRepo;
@@ -206,12 +202,12 @@ public class ImportView extends Div
 
     private void createImportLayout(SplitLayout splitLayout)
     {
-        Div editorLayoutDiv = new Div();
-        editorLayoutDiv.setClassName("editor-layout");
+        Div layoutDiv = new Div();
+        layoutDiv.setClassName("input-layout");
 
-        Div editorDiv = new Div();
-        editorDiv.setClassName("editor");
-        editorLayoutDiv.add(editorDiv);
+        Div innerDiv = new Div();
+        innerDiv.setClassName("input");
+        layoutDiv.add(innerDiv);
 
         FormLayout formLayout = new FormLayout();
         this.directoryTextField = new TextField("Directory");
@@ -233,40 +229,8 @@ public class ImportView extends Div
         this.imageCountLabel = new Label("0 images found");
         this.soundCountLabel = new Label("0 sounds found");
 
-        this.applyTagsTextField = new Autocomplete(4);
+        this.applyTagsTextField = new TagSearchTextField(4, this.tagService);
         this.applyTagsTextField.setLabel("Apply these tags on import (comma separated)");
-        this.applyTagsTextField.addChangeListener(event -> {
-            String text = event.getValue();
-            String[] singleTags = text.split(",");
-
-            String currentTag = singleTags[singleTags.length - 1].trim();
-
-            if (!currentTag.isEmpty())
-            {
-                this.applyTagsTextField.setOptions(this.tagService.getTagNamesForValue(currentTag));
-            }
-            else
-            {
-                this.applyTagsTextField.setOptions(List.of());
-            }
-
-            this.currentTagTextFieldValue = event.getValue();
-        });
-
-        this.applyTagsTextField.addAutocompleteValueAppliedListener(e -> {
-            if (this.processAutoCompleteApplyEvent)
-            {
-                this.processAutoCompleteApplyEvent = false;
-
-                String[] singleTags = this.currentTagTextFieldValue.split(",");
-                List<String> newTagList = Arrays.asList(singleTags).stream().map(String::trim).collect(Collectors.toList());
-                newTagList.set(newTagList.size() - 1, e.getValue());
-
-                this.applyTagsTextField.setValue(String.join(", ", newTagList));
-
-                executorService.schedule(() -> this.processAutoCompleteApplyEvent = true, 200, TimeUnit.MILLISECONDS);
-            }
-        });
 
         this.searchButton = new Button("Search");
         this.searchButton.addClickListener(e -> {
@@ -326,21 +290,21 @@ public class ImportView extends Div
         };
 
         formLayout.add(fields);
-        editorDiv.add(formLayout);
+        innerDiv.add(formLayout);
 
         this.importButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         span = new Span();
         span.setHeight("50px");
-        editorDiv.add(new Hr(), span, this.importButton);
+        innerDiv.add(new Hr(), span, this.importButton);
 
         this.audioPlayer = new AudioPlayer();
 
         span = new Span();
         span.setHeight("30px");
-        editorDiv.add(new Hr(), span, this.audioPlayer);
+        innerDiv.add(new Hr(), span, this.audioPlayer);
 
-        splitLayout.addToSecondary(editorLayoutDiv);
+        splitLayout.addToSecondary(layoutDiv);
     }
 
     private void importFiles()
@@ -360,6 +324,11 @@ public class ImportView extends Div
             {
                 tags.add(this.tagService.obtainTag(tag));
             }
+        }
+
+        if (tags.isEmpty())
+        {
+            tags.add(this.tagService.obtainTag("UNTAGGED"));
         }
 
         List<ImageAssetImportRow> selectedImages = this.imageFiles.stream()

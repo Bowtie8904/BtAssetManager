@@ -11,10 +11,14 @@ import com.vaadin.flow.theme.Theme;
 import com.vaadin.flow.theme.lumo.Lumo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.logging.LoggingSystem;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+import org.springframework.context.event.EventListener;
 
+import java.awt.*;
 import java.io.IOException;
+import java.net.URI;
 import java.util.logging.Level;
 
 /**
@@ -29,7 +33,6 @@ import java.util.logging.Level;
 @NpmPackage(value = "line-awesome", version = "1.3.0")
 public class Application extends SpringBootServletInitializer implements AppShellConfigurator
 {
-
     public static void main(String[] args) throws IOException
     {
         // disable logging system to force spring into using SLF4J binding
@@ -38,7 +41,7 @@ public class Application extends SpringBootServletInitializer implements AppShel
         // making Desktop class work to open file locations
         System.setProperty("java.awt.headless", "false");
 
-        LoggerConfiguration config = new LoggerConfiguration().level(Level.FINE)
+        LoggerConfiguration config = new LoggerConfiguration().level(Level.INFO)
                                                               .invalidCallerPackages("org.apache.commons.logging",
                                                                                      "org.springframework.boot.autoconfigure.logging",
                                                                                      "org.springframework.core.log");
@@ -50,5 +53,20 @@ public class Application extends SpringBootServletInitializer implements AppShel
                                                                                               10,
                                                                                               true));
         SpringApplication.run(Application.class, args);
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void doSomethingAfterStartup()
+    {
+        Log.info("Opening browser");
+
+        try
+        {
+            Desktop.getDesktop().browse(new URI("http://localhost:4567/images"));
+        }
+        catch (Exception e)
+        {
+            Log.error("Could not open browser", e);
+        }
     }
 }

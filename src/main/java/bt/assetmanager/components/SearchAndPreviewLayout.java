@@ -145,6 +145,7 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
 
         this.searchButton = new Button("Search");
         this.searchButton.addClickListener(e -> onSearchButton());
+        this.searchButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         this.addTagButton = new Button("Add tag");
         this.addTagButton.addClickListener(e -> onAddTagButton());

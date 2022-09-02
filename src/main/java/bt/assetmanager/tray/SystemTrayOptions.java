@@ -35,5 +35,7 @@ public class SystemTrayOptions extends DefaultSwingSystemTrayFrame
         {
             System.exit(0);
         });
+
+        sendToSystemTray();
     }
 }

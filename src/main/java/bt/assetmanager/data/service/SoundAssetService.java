@@ -43,6 +43,6 @@ public class SoundAssetService implements AssetService<SoundAsset>
     @Override
     public List<SoundAsset> findAll()
     {
-        return this.soundAssetRepo.findAll();
+        return this.soundAssetRepo.findAllByOrderByPathAsc();
     }
 }

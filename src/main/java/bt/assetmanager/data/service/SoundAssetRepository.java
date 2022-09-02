@@ -27,4 +27,6 @@ public interface SoundAssetRepository extends JpaRepository<SoundAsset, Long>
     public List<SoundAsset> findByFileNameContainingIgnoreCase(String fileName);
 
     public boolean existsByPathIgnoreCase(String path);
+
+    public List<SoundAsset> findAllByOrderByPathAsc();
 }

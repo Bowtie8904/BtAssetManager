@@ -27,4 +27,6 @@ public interface ImageAssetRepository extends JpaRepository<ImageAsset, Long>
     public List<ImageAsset> findByFileNameContainingIgnoreCase(String fileName);
 
     public boolean existsByPathIgnoreCase(String path);
+
+    public List<ImageAsset> findAllByOrderByPathAsc();
 }

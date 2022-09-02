@@ -43,6 +43,6 @@ public class ImageAssetService implements AssetService<ImageAsset>
     @Override
     public List<ImageAsset> findAll()
     {
-        return this.imageAssetRepo.findAll();
+        return this.imageAssetRepo.findAllByOrderByPathAsc();
     }
 }

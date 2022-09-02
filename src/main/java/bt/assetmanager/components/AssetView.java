@@ -11,12 +11,12 @@ import com.vaadin.flow.component.splitlayout.SplitLayout;
  */
 public class AssetView<T extends Asset> extends SplitLayout
 {
-    private AssetGrid<T> grid;
+    private AssetList<T> grid;
     private SearchAndPreviewLayout<T> searchAndPreview;
 
     public AssetView(Class<T> clazz, AssetService<T> assetService, TagService tagService)
     {
-        this.grid = new AssetGrid<T>(clazz);
+        this.grid = new AssetList<T>(clazz);
 
         this.searchAndPreview = new SearchAndPreviewLayout(clazz, assetService, tagService);
         this.searchAndPreview.onSearch(this.grid::setItems);

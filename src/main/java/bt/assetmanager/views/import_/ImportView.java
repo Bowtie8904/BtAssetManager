@@ -5,6 +5,7 @@ import bt.assetmanager.components.ScrollTreeGrid;
 import bt.assetmanager.components.TagSearchTextField;
 import bt.assetmanager.data.entity.*;
 import bt.assetmanager.data.service.*;
+import bt.assetmanager.util.UIUtils;
 import bt.assetmanager.views.MainLayout;
 import bt.log.Log;
 import com.vaadin.componentfactory.Autocomplete;
@@ -17,7 +18,10 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
-import com.vaadin.flow.component.html.*;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Hr;
+import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -222,9 +226,6 @@ public class ImportView extends Div
         this.soundFileEndingsTextField = new TextField("Sound file endings (comma separated)");
         this.soundFileEndingsTextField.setValue(String.join(", ", this.soundFileEndings));
 
-        Span span = new Span();
-        span.setHeight("20px");
-
         this.importButton = new Button("Import");
         this.importButton.setEnabled(false);
         this.importButton.addClickListener(e -> importFiles());
@@ -281,39 +282,31 @@ public class ImportView extends Div
 
             this.importButton.setEnabled(!this.imageFiles.isEmpty() || !this.soundFiles.isEmpty());
         });
-        Span span2 = new Span();
-        span2.setHeight("50px");
-        Span span3 = new Span();
-        span3.setHeight("10px");
 
         Component[] fields = new Component[] { this.directoryTextField,
                                                this.browseOriginButton,
                                                this.imageFileEndingsTextField,
                                                this.soundFileEndingsTextField,
-                                               span,
+                                               UIUtils.span("20px"),
                                                this.imageCountLabel,
                                                this.soundCountLabel,
-                                               span3,
+                                               UIUtils.span("10px"),
                                                this.searchButton,
                                                new Hr(),
                                                this.applyTagsTextField,
-                                               span2
-        };
+                                               UIUtils.span("50px"),
+                                               };
 
         formLayout.add(fields);
         innerDiv.add(formLayout);
 
         this.importButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        span = new Span();
-        span.setHeight("50px");
-        innerDiv.add(new Hr(), span, this.importButton);
+        innerDiv.add(new Hr(), UIUtils.span("50px"), this.importButton);
 
         this.audioPlayer = new AudioPlayer();
 
-        span = new Span();
-        span.setHeight("30px");
-        innerDiv.add(new Hr(), span, this.audioPlayer);
+        innerDiv.add(new Hr(), UIUtils.span("30px"), this.audioPlayer);
 
         splitLayout.addToSecondary(layoutDiv);
     }

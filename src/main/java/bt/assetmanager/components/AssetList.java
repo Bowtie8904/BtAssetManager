@@ -23,14 +23,14 @@ import java.util.function.Consumer;
  * @author Lukas Hartwig
  * @since 01.09.2022
  */
-public class AssetGrid<T extends Asset> extends Div
+public class AssetList<T extends Asset> extends Div
 {
     private Grid<T> grid;
     private Consumer<T> onElementSelection;
     private Consumer<T> onElementPlay;
     private Class<T> clazz;
 
-    public AssetGrid(Class<T> clazz)
+    public AssetList(Class<T> clazz)
     {
         setClassName("grid-wrapper");
         this.grid = new Grid<>(clazz, false);
@@ -41,6 +41,7 @@ public class AssetGrid<T extends Asset> extends Div
     public void setItems(List<T> items)
     {
         this.grid.setItems(items);
+        this.grid.scrollToStart();
     }
 
     public void onElementSelection(Consumer<T> consumer)
@@ -131,7 +132,7 @@ public class AssetGrid<T extends Asset> extends Div
         this.grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
 
         this.grid.setSelectionMode(Grid.SelectionMode.SINGLE);
-        
+
         add(this.grid);
     }
 }

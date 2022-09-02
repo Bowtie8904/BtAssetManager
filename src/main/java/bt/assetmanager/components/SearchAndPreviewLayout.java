@@ -5,12 +5,16 @@ import bt.assetmanager.data.entity.ImageAsset;
 import bt.assetmanager.data.entity.Tag;
 import bt.assetmanager.data.service.AssetService;
 import bt.assetmanager.data.service.TagService;
+import bt.assetmanager.util.UIUtils;
 import com.vaadin.componentfactory.Autocomplete;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.html.*;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Hr;
+import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.virtuallist.VirtualList;
@@ -144,18 +148,12 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
             return tagLayout;
         }));
 
-        Span span = new Span();
-        span.setHeight("30px");
-
-        Span span2 = new Span();
-        span2.setHeight("50px");
-
         Component[] fields = new Component[] { this.foundFilesLabel,
-                                               span,
+                                               UIUtils.span("30px"),
                                                this.searchTextField,
                                                this.fileNameFilterCheckbox,
                                                this.searchButton,
-                                               span2,
+                                               UIUtils.span("50px"),
                                                new Hr(),
                                                this.clazz.equals(ImageAsset.class) ? this.image : this.audioPlayer,
                                                new Hr(),

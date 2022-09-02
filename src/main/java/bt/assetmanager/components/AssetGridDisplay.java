@@ -21,6 +21,7 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
 {
     private Grid<AssetGridRow> grid;
     private int elementsPerRow;
+    private Image selectedImage;
 
     public AssetGridDisplay(Class<T> clazz, int elementsPerRow)
     {
@@ -67,6 +68,18 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
         this.grid.scrollToStart();
     }
 
+    public void selectImage(Image image)
+    {
+        if (this.selectedImage != null)
+        {
+            this.selectedImage.getStyle().set("border", "6px solid transparent");
+        }
+
+        this.selectedImage = image;
+        this.selectedImage.getStyle().set("border", "6px solid DarkOrange");
+        this.selectedImage.getStyle().set("border-radius", "25px");
+    }
+
     protected Grid<AssetGridRow> createGrid()
     {
         Grid<AssetGridRow> newGrid = new Grid<AssetGridRow>(AssetGridRow.class, false);
@@ -95,12 +108,15 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
                                               Image image = new Image(imageResource, "Couldn't load image");
                                               image.setHeight("80px");
                                               image.setWidth("80px");
+                                              image.getStyle().set("border", "6px solid transparent");
 
                                               image.addClickListener(e -> {
                                                   if (this.onElementSelection != null)
                                                   {
                                                       this.onElementSelection.accept(asset);
                                                   }
+
+                                                  selectImage(image);
                                               });
 
                                               return image;

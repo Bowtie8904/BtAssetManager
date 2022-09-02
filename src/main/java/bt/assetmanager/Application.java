@@ -1,5 +1,6 @@
 package bt.assetmanager;
 
+import bt.assetmanager.tray.SystemTrayOptions;
 import bt.log.ConsoleLoggerHandler;
 import bt.log.FileLoggerHandler;
 import bt.log.Log;
@@ -58,10 +59,9 @@ public class Application extends SpringBootServletInitializer implements AppShel
     @EventListener(ApplicationReadyEvent.class)
     public void doSomethingAfterStartup()
     {
-        Log.info("Opening browser");
-
         try
         {
+            new SystemTrayOptions();
             Desktop.getDesktop().browse(new URI("http://localhost:4567/images"));
         }
         catch (Exception e)

@@ -39,7 +39,7 @@ public class ScrollTreeGrid<T> extends TreeGrid<T>
     public void scrollToItem(T item)
     {
         int index = getIndexForItem(item);
-        Log.info(index + "");
+
         if (index >= 0)
         {
             scrollToIndex(index);

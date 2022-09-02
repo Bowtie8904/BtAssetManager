@@ -23,6 +23,8 @@ import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
@@ -72,8 +74,8 @@ public class ImportView extends Div
     private AudioPlayer audioPlayer;
     private Label imageCountLabel;
     private Label soundCountLabel;
-    private volatile boolean processAutoCompleteApplyEvent = true;
-    private String currentTagTextFieldValue;
+    private Button selectAllImportCheckboxButton;
+    private Button deselectAllImportCheckboxButton;
 
     @Autowired
     public ImportView(ImageFileEndingRepository imageFileEndingRepo,
@@ -229,6 +231,8 @@ public class ImportView extends Div
         this.importButton = new Button("Import");
         this.importButton.setEnabled(false);
         this.importButton.addClickListener(e -> importFiles());
+        this.importButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
         this.imageCountLabel = new Label("0 images found");
         this.soundCountLabel = new Label("0 sounds found");
 
@@ -274,6 +278,30 @@ public class ImportView extends Div
             this.tempImageRepo.deleteAll();
             this.tempSoundRepo.deleteAll();
 
+            for (var row : this.imageFiles)
+            {
+                Checkbox checkbox = new Checkbox();
+                checkbox.setValue(row.isShouldImport());
+
+                checkbox.addValueChangeListener(event -> {
+                    row.setShouldImport(event.getValue());
+                });
+
+                row.setImportCheckbox(checkbox);
+            }
+
+            for (var row : this.soundFiles)
+            {
+                Checkbox checkbox = new Checkbox();
+                checkbox.setValue(row.isShouldImport());
+
+                checkbox.addValueChangeListener(event -> {
+                    row.setShouldImport(event.getValue());
+                });
+
+                row.setImportCheckbox(checkbox);
+            }
+
             this.imageCountLabel.setText(this.imageFiles.size() + " images found");
             this.soundCountLabel.setText(this.soundFiles.size() + " sounds found");
 
@@ -282,6 +310,40 @@ public class ImportView extends Div
 
             this.importButton.setEnabled(!this.imageFiles.isEmpty() || !this.soundFiles.isEmpty());
         });
+
+        this.selectAllImportCheckboxButton = new Button("Import all");
+        this.selectAllImportCheckboxButton.setWidth("160px");
+        this.selectAllImportCheckboxButton.addClickListener(e -> {
+            for (var row : this.imageFiles)
+            {
+                row.checkImportBox(true);
+            }
+
+            for (var row : this.soundFiles)
+            {
+                row.checkImportBox(true);
+            }
+        });
+
+        this.deselectAllImportCheckboxButton = new Button("Import none");
+        this.deselectAllImportCheckboxButton.setWidth("160px");
+        this.deselectAllImportCheckboxButton.addClickListener(e -> {
+            for (var row : this.imageFiles)
+            {
+                row.checkImportBox(false);
+            }
+
+            for (var row : this.soundFiles)
+            {
+                row.checkImportBox(false);
+            }
+        });
+
+        HorizontalLayout buttonLayout = new HorizontalLayout();
+        buttonLayout.setVerticalComponentAlignment(FlexComponent.Alignment.CENTER, this.selectAllImportCheckboxButton, this.deselectAllImportCheckboxButton);
+        buttonLayout.add(this.selectAllImportCheckboxButton, this.deselectAllImportCheckboxButton);
+
+        this.audioPlayer = new AudioPlayer();
 
         Component[] fields = new Component[] { this.directoryTextField,
                                                this.browseOriginButton,
@@ -292,21 +354,25 @@ public class ImportView extends Div
                                                this.soundCountLabel,
                                                UIUtils.heightFiller("10px"),
                                                this.searchButton,
+                                               UIUtils.heightFiller("15px"),
                                                new Hr(),
                                                this.applyTagsTextField,
-                                               UIUtils.heightFiller("50px"),
-                                               };
+                                               UIUtils.heightFiller("15px"),
+                                               new Hr(),
+                                               UIUtils.heightFiller("15px"),
+                                               buttonLayout,
+                                               UIUtils.heightFiller("30px"),
+                                               new Hr(),
+                                               UIUtils.heightFiller("30px"),
+                                               this.importButton,
+                                               UIUtils.heightFiller("15px"),
+                                               new Hr(),
+                                               UIUtils.heightFiller("15px"),
+                                               this.audioPlayer
+        };
 
         formLayout.add(fields);
         innerDiv.add(formLayout);
-
-        this.importButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-        innerDiv.add(new Hr(), UIUtils.heightFiller("50px"), this.importButton);
-
-        this.audioPlayer = new AudioPlayer();
-
-        innerDiv.add(new Hr(), UIUtils.heightFiller("30px"), this.audioPlayer);
 
         splitLayout.addToSecondary(layoutDiv);
     }
@@ -334,6 +400,8 @@ public class ImportView extends Div
                                                                   .filter(ImageAssetImportRow::isShouldImport)
                                                                   .collect(Collectors.toList());
 
+        Log.info("Starting to import " + selectedImages.size() + " images");
+
         for (ImageAssetImportRow row : selectedImages)
         {
             ImageAsset asset = new ImageAsset();
@@ -348,11 +416,15 @@ public class ImportView extends Div
             this.imageFiles.remove(row);
         }
 
+        Log.info("Done importing " + selectedImages.size() + " images");
+
         this.imageGrid.setItems(this.imageFiles);
 
         List<SoundAssetImportRow> selectedSounds = this.soundFiles.stream()
                                                                   .filter(SoundAssetImportRow::isShouldImport)
                                                                   .collect(Collectors.toList());
+
+        Log.info("Starting to import " + selectedSounds.size() + " sounds");
 
         for (SoundAssetImportRow row : selectedSounds)
         {
@@ -367,6 +439,8 @@ public class ImportView extends Div
 
             this.soundFiles.remove(row);
         }
+
+        Log.info("Done importing " + selectedSounds.size() + " sounds");
 
         this.soundGrid.setItems(this.soundFiles);
     }
@@ -439,15 +513,7 @@ public class ImportView extends Div
     {
         this.imageGrid.addColumn(new ComponentRenderer<>(
                                          row -> {
-                                             Checkbox checkbox = new Checkbox();
-                                             checkbox.setValue(row.isShouldImport());
-
-                                             checkbox.addValueChangeListener(event -> {
-                                                 row.setShouldImport(event.getValue());
-                                                 Log.info(row.getFileName() + " " + row.isShouldImport());
-                                             });
-
-                                             return checkbox;
+                                             return row.getImportCheckbox();
                                          }
                                  )
         ).setHeader("Import").setKey("shouldImport");
@@ -487,15 +553,7 @@ public class ImportView extends Div
     {
         this.soundGrid.addColumn(new ComponentRenderer<>(
                                          row -> {
-                                             Checkbox checkbox = new Checkbox();
-                                             checkbox.setValue(row.isShouldImport());
-
-                                             checkbox.addValueChangeListener(event -> {
-                                                 row.setShouldImport(event.getValue());
-                                                 Log.info(row.getFileName() + " " + row.isShouldImport());
-                                             });
-
-                                             return checkbox;
+                                             return row.getImportCheckbox();
                                          }
                                  )
         ).setHeader("Import").setKey("shouldImport");

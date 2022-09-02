@@ -287,14 +287,14 @@ public class ImportView extends Div
                                                this.browseOriginButton,
                                                this.imageFileEndingsTextField,
                                                this.soundFileEndingsTextField,
-                                               UIUtils.span("20px"),
+                                               UIUtils.heightFiller("20px"),
                                                this.imageCountLabel,
                                                this.soundCountLabel,
-                                               UIUtils.span("10px"),
+                                               UIUtils.heightFiller("10px"),
                                                this.searchButton,
                                                new Hr(),
                                                this.applyTagsTextField,
-                                               UIUtils.span("50px"),
+                                               UIUtils.heightFiller("50px"),
                                                };
 
         formLayout.add(fields);
@@ -302,11 +302,11 @@ public class ImportView extends Div
 
         this.importButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-        innerDiv.add(new Hr(), UIUtils.span("50px"), this.importButton);
+        innerDiv.add(new Hr(), UIUtils.heightFiller("50px"), this.importButton);
 
         this.audioPlayer = new AudioPlayer();
 
-        innerDiv.add(new Hr(), UIUtils.span("30px"), this.audioPlayer);
+        innerDiv.add(new Hr(), UIUtils.heightFiller("30px"), this.audioPlayer);
 
         splitLayout.addToSecondary(layoutDiv);
     }

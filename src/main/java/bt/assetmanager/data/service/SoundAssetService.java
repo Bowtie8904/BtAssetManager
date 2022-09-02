@@ -35,6 +35,12 @@ public class SoundAssetService implements AssetService<SoundAsset>
     }
 
     @Override
+    public void delete(SoundAsset entity)
+    {
+        this.soundAssetRepo.delete(entity);
+    }
+
+    @Override
     public List<SoundAsset> findAll()
     {
         return this.soundAssetRepo.findAll();

@@ -6,23 +6,30 @@ import bt.assetmanager.data.entity.Tag;
 import bt.assetmanager.data.service.AssetService;
 import bt.assetmanager.data.service.TagService;
 import bt.assetmanager.util.UIUtils;
+import bt.log.Log;
 import com.vaadin.componentfactory.Autocomplete;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.virtuallist.VirtualList;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.server.StreamResource;
 
+import java.awt.*;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -49,6 +56,11 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
     private VirtualList<String> tagList;
     private Consumer<List<T>> onSearchConsumer;
     private Consumer<String> onAddTagConsumer;
+    private Consumer<Boolean> onViewChange;
+    private Button switchLayoutButton;
+    private boolean displayLines;
+    private Button openFolderButton;
+    private Button deleteButton;
 
     public SearchAndPreviewLayout(Class<T> clazz, AssetService<T> assetService, TagService tagService)
     {
@@ -103,6 +115,11 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
         this.onAddTagConsumer = consumer;
     }
 
+    public void onViewChange(Consumer<Boolean> consumer)
+    {
+        this.onViewChange = consumer;
+    }
+
     private void createUI()
     {
         setClassName("input-layout");
@@ -148,18 +165,70 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
             return tagLayout;
         }));
 
-        Component[] fields = new Component[] { this.foundFilesLabel,
-                                               UIUtils.span("30px"),
+        this.switchLayoutButton = new Button(new Icon(VaadinIcon.LINES_LIST));
+
+        this.switchLayoutButton.addClickListener(e -> {
+            this.displayLines = !this.displayLines;
+
+            if (this.displayLines)
+            {
+                this.switchLayoutButton.setIcon(new Icon(VaadinIcon.GRID_SMALL));
+            }
+            else
+            {
+                this.switchLayoutButton.setIcon(new Icon(VaadinIcon.LINES_LIST));
+            }
+
+            if (this.onViewChange != null)
+            {
+                this.onViewChange.accept(this.displayLines);
+            }
+        });
+
+        this.openFolderButton = new Button("Open folder");
+
+        this.openFolderButton.addClickListener(e -> {
+            if (this.currentlySelectedElement != null)
+            {
+                try
+                {
+                    Desktop.getDesktop().open(new File(this.currentlySelectedElement.getPath()).getParentFile());
+                }
+                catch (IOException ex)
+                {
+                    Log.error("Failed to open file location", ex);
+                }
+            }
+        });
+
+        this.deleteButton = new Button("Delete");
+
+        this.deleteButton.addClickListener(e -> {
+            if (this.currentlySelectedElement != null)
+            {
+                this.assetService.delete(this.currentlySelectedElement);
+            }
+        });
+
+        this.deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+
+        Component[] fields = new Component[] { this.clazz.equals(ImageAsset.class) ? this.switchLayoutButton : UIUtils.heightFiller("40px"),
+                                               UIUtils.heightFiller("10px"),
+                                               this.clazz.equals(ImageAsset.class) ? this.openFolderButton : UIUtils.heightFiller("40px"),
+                                               this.foundFilesLabel,
+                                               UIUtils.heightFiller("30px"),
                                                this.searchTextField,
                                                this.fileNameFilterCheckbox,
                                                this.searchButton,
-                                               UIUtils.span("50px"),
+                                               UIUtils.heightFiller("50px"),
                                                new Hr(),
                                                this.clazz.equals(ImageAsset.class) ? this.image : this.audioPlayer,
                                                new Hr(),
                                                this.addTagTextField,
                                                this.addTagButton,
-                                               this.tagList
+                                               this.tagList,
+                                               UIUtils.heightFiller("40px"),
+                                               this.deleteButton
         };
 
         formLayout.add(fields);

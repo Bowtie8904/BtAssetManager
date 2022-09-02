@@ -19,6 +19,7 @@ import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.virtuallist.VirtualList;
@@ -208,6 +209,8 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
             if (this.currentlySelectedElement != null)
             {
                 this.assetService.delete(this.currentlySelectedElement);
+
+                Notification.show("Removed file " + this.currentlySelectedElement.getFileName());
             }
         });
 

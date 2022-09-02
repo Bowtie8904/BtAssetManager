@@ -23,6 +23,7 @@ import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
@@ -400,6 +401,12 @@ public class ImportView extends Div
                                                                   .filter(ImageAssetImportRow::isShouldImport)
                                                                   .collect(Collectors.toList());
 
+        List<SoundAssetImportRow> selectedSounds = this.soundFiles.stream()
+                                                                  .filter(SoundAssetImportRow::isShouldImport)
+                                                                  .collect(Collectors.toList());
+
+        Notification.show("Importing " + selectedImages.size() + " images and " + selectedSounds.size() + " sounds");
+
         Log.info("Starting to import " + selectedImages.size() + " images");
 
         for (ImageAssetImportRow row : selectedImages)
@@ -416,13 +423,10 @@ public class ImportView extends Div
             this.imageFiles.remove(row);
         }
 
+        this.imageCountLabel.setText(this.imageFiles.size() + " images found");
         Log.info("Done importing " + selectedImages.size() + " images");
 
         this.imageGrid.setItems(this.imageFiles);
-
-        List<SoundAssetImportRow> selectedSounds = this.soundFiles.stream()
-                                                                  .filter(SoundAssetImportRow::isShouldImport)
-                                                                  .collect(Collectors.toList());
 
         Log.info("Starting to import " + selectedSounds.size() + " sounds");
 
@@ -440,6 +444,7 @@ public class ImportView extends Div
             this.soundFiles.remove(row);
         }
 
+        this.imageCountLabel.setText(this.imageFiles.size() + " images found");
         Log.info("Done importing " + selectedSounds.size() + " sounds");
 
         this.soundGrid.setItems(this.soundFiles);

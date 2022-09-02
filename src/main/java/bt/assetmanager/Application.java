@@ -17,6 +17,7 @@ import org.springframework.boot.logging.LoggingSystem;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.event.EventListener;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
@@ -53,15 +54,16 @@ public class Application extends SpringBootServletInitializer implements AppShel
                                                                                               10_000_000,
                                                                                               10,
                                                                                               true));
+
         SpringApplication.run(Application.class, args);
     }
 
     @EventListener(ApplicationReadyEvent.class)
-    public void doSomethingAfterStartup()
+    public void afterStartup()
     {
         try
         {
-            new SystemTrayOptions();
+            new SystemTrayOptions(ImageIO.read(SystemTrayOptions.class.getResourceAsStream("/trayicon.png")));
             Desktop.getDesktop().browse(new URI("http://localhost:4567/images"));
         }
         catch (Exception e)

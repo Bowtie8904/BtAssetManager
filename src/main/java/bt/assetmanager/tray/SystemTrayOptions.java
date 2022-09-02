@@ -3,9 +3,7 @@ package bt.assetmanager.tray;
 import bt.gui.swing.tray.DefaultSwingSystemTrayFrame;
 import bt.log.Log;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
-import java.io.IOException;
 import java.net.URI;
 
 /**
@@ -14,10 +12,9 @@ import java.net.URI;
  */
 public class SystemTrayOptions extends DefaultSwingSystemTrayFrame
 {
-    public SystemTrayOptions() throws IOException
+    public SystemTrayOptions(Image icon)
     {
-        super(ImageIO.read(SystemTrayOptions.class.getResourceAsStream("/trayicon.png")));
-
+        super(icon);
         var settings = getSystemTraySettings();
 
         settings.addLabel("Asset manager");
@@ -38,7 +35,5 @@ public class SystemTrayOptions extends DefaultSwingSystemTrayFrame
         {
             System.exit(0);
         });
-
-        sendToSystemTray();
     }
 }

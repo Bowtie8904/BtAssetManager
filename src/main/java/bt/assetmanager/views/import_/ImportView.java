@@ -54,8 +54,8 @@ public class ImportView extends Div
     private static File selectedOriginDirectory;
     private TempImageAssetRepository tempImageRepo;
     private TempSoundAssetRepository tempSoundRepo;
-    private Grid<ImageAssetImportRow> imageGrid = new Grid<>(ImageAssetImportRow.class, false);
-    private Grid<SoundAssetImportRow> soundGrid = new Grid<>(SoundAssetImportRow.class, false);
+    private Grid<AssetImportRow> imageGrid = new Grid<>(AssetImportRow.class, false);
+    private Grid<AssetImportRow> soundGrid = new Grid<>(AssetImportRow.class, false);
     private ImageFileEndingRepository imageFileEndingRepo;
     private SoundFileEndingRepository soundFileEndingRepo;
     private ImageAssetRepository imageRepo;
@@ -63,8 +63,8 @@ public class ImportView extends Div
     private TagService tagService;
     private List<String> soundFileEndings;
     private List<String> imageFileEndings;
-    private List<SoundAssetImportRow> soundFiles;
-    private List<ImageAssetImportRow> imageFiles;
+    private List<AssetImportRow> soundFiles;
+    private List<AssetImportRow> imageFiles;
     private TextField directoryTextField;
     private TextField imageFileEndingsTextField;
     private TextField soundFileEndingsTextField;
@@ -77,6 +77,8 @@ public class ImportView extends Div
     private Label soundCountLabel;
     private Button selectAllImportCheckboxButton;
     private Button deselectAllImportCheckboxButton;
+    private AssetImportRow lastCheckedImageRow;
+    private AssetImportRow lastCheckedSoundRow;
 
     @Autowired
     public ImportView(ImageFileEndingRepository imageFileEndingRepo,
@@ -243,6 +245,9 @@ public class ImportView extends Div
         this.searchButton.addClickListener(e -> {
             this.importButton.setEnabled(false);
 
+            this.lastCheckedImageRow = null;
+            this.lastCheckedSoundRow = null;
+
             replaceImageEndings();
             replaceSoundEndings();
 
@@ -268,7 +273,7 @@ public class ImportView extends Div
             tempSoundFiles = this.tempSoundRepo.getAllNonExisting();
 
             this.imageFiles = tempImageFiles.parallelStream().map(temp -> {
-                var row = new ImageAssetImportRow();
+                var row = new AssetImportRow();
                 row.setFileName(temp.getFileName());
                 row.setAbsolutePath(temp.getPath());
                 row.setRelativePath(temp.getPath().substring(selectedOriginDirectory.getAbsolutePath().length()));
@@ -276,7 +281,7 @@ public class ImportView extends Div
             }).collect(Collectors.toList());
 
             this.soundFiles = tempSoundFiles.parallelStream().map(temp -> {
-                var row = new SoundAssetImportRow();
+                var row = new AssetImportRow();
                 row.setFileName(temp.getFileName());
                 row.setAbsolutePath(temp.getPath());
                 row.setRelativePath(temp.getPath().substring(selectedOriginDirectory.getAbsolutePath().length()));
@@ -286,28 +291,36 @@ public class ImportView extends Div
             this.tempImageRepo.deleteAll();
             this.tempSoundRepo.deleteAll();
 
-            for (var row : this.imageFiles)
+            for (int i = 0; i < this.imageFiles.size(); i++)
             {
-                Checkbox checkbox = new Checkbox();
-                checkbox.setValue(row.isShouldImport());
+                var row = this.imageFiles.get(i);
+                row.setIndex(i);
+                createCheckBoxForRow(row);
 
-                checkbox.addValueChangeListener(event -> {
-                    row.setShouldImport(event.getValue());
+                row.getImportCheckbox().addClickListener(event -> {
+                    if (event.isShiftKey() && this.lastCheckedImageRow != null)
+                    {
+                        selectAllInRange(this.imageFiles, row.getIndex(), this.lastCheckedImageRow.getIndex());
+                    }
+
+                    this.lastCheckedImageRow = row;
                 });
-
-                row.setImportCheckbox(checkbox);
             }
 
-            for (var row : this.soundFiles)
+            for (int i = 0; i < this.soundFiles.size(); i++)
             {
-                Checkbox checkbox = new Checkbox();
-                checkbox.setValue(row.isShouldImport());
+                var row = this.soundFiles.get(i);
+                row.setIndex(i);
+                createCheckBoxForRow(row);
 
-                checkbox.addValueChangeListener(event -> {
-                    row.setShouldImport(event.getValue());
+                row.getImportCheckbox().addClickListener(event -> {
+                    if (event.isShiftKey() && this.lastCheckedSoundRow != null)
+                    {
+                        selectAllInRange(this.soundFiles, row.getIndex(), this.lastCheckedSoundRow.getIndex());
+                    }
+
+                    this.lastCheckedSoundRow = row;
                 });
-
-                row.setImportCheckbox(checkbox);
             }
 
             this.imageCountLabel.setText(this.imageFiles.size() + " images found");
@@ -317,6 +330,9 @@ public class ImportView extends Div
             this.soundGrid.setItems(this.soundFiles);
 
             this.importButton.setEnabled(!this.imageFiles.isEmpty() || !this.soundFiles.isEmpty());
+
+            this.imageGrid.scrollToStart();
+            this.soundGrid.scrollToStart();
         });
 
         this.selectAllImportCheckboxButton = new Button("Import all");
@@ -385,8 +401,34 @@ public class ImportView extends Div
         splitLayout.addToSecondary(layoutDiv);
     }
 
+    public void selectAllInRange(List<AssetImportRow> rows, int index1, int index2)
+    {
+        int min = Math.min(index1, index2);
+        int max = Math.max(index1, index2);
+
+        for (int i = min; i <= max; i++)
+        {
+            rows.get(i).checkImportBox(true);
+        }
+    }
+
+    private void createCheckBoxForRow(AssetImportRow row)
+    {
+        Checkbox checkbox = new Checkbox();
+        checkbox.setValue(row.isShouldImport());
+
+        checkbox.addValueChangeListener(event -> {
+            row.setShouldImport(event.getValue());
+        });
+
+        row.setImportCheckbox(checkbox);
+    }
+
     private void importFiles()
     {
+        this.lastCheckedImageRow = null;
+        this.lastCheckedSoundRow = null;
+
         List<Tag> tags = new ArrayList<>();
 
         for (String tag : this.applyTagsTextField.getValue().trim().split(","))
@@ -404,19 +446,19 @@ public class ImportView extends Div
             tags.add(this.tagService.obtainTag("UNTAGGED"));
         }
 
-        List<ImageAssetImportRow> selectedImages = this.imageFiles.stream()
-                                                                  .filter(ImageAssetImportRow::isShouldImport)
-                                                                  .collect(Collectors.toList());
+        List<AssetImportRow> selectedImages = this.imageFiles.stream()
+                                                             .filter(AssetImportRow::isShouldImport)
+                                                             .collect(Collectors.toList());
 
-        List<SoundAssetImportRow> selectedSounds = this.soundFiles.stream()
-                                                                  .filter(SoundAssetImportRow::isShouldImport)
-                                                                  .collect(Collectors.toList());
+        List<AssetImportRow> selectedSounds = this.soundFiles.stream()
+                                                             .filter(AssetImportRow::isShouldImport)
+                                                             .collect(Collectors.toList());
 
         Notification.show("Importing " + selectedImages.size() + " images and " + selectedSounds.size() + " sounds");
 
         Log.info("Starting to import " + selectedImages.size() + " images");
 
-        for (ImageAssetImportRow row : selectedImages)
+        for (AssetImportRow row : selectedImages)
         {
             ImageAsset asset = new ImageAsset();
             asset.setTags(tags);
@@ -435,9 +477,15 @@ public class ImportView extends Div
 
         this.imageGrid.setItems(this.imageFiles);
 
+        for (int i = 0; i < this.imageFiles.size(); i++)
+        {
+            var row = this.imageFiles.get(i);
+            row.setIndex(i);
+        }
+
         Log.info("Starting to import " + selectedSounds.size() + " sounds");
 
-        for (SoundAssetImportRow row : selectedSounds)
+        for (AssetImportRow row : selectedSounds)
         {
             SoundAsset asset = new SoundAsset();
             asset.setTags(tags);
@@ -451,10 +499,16 @@ public class ImportView extends Div
             this.soundFiles.remove(row);
         }
 
-        this.imageCountLabel.setText(this.imageFiles.size() + " images found");
+        this.soundCountLabel.setText(this.soundFiles.size() + " sounds found");
         Log.info("Done importing " + selectedSounds.size() + " sounds");
 
         this.soundGrid.setItems(this.soundFiles);
+
+        for (int i = 0; i < this.soundFiles.size(); i++)
+        {
+            var row = this.soundFiles.get(i);
+            row.setIndex(i);
+        }
     }
 
     private void fillFileGrids(File root, List<TempImageAsset> tempImageFiles, List<TempSoundAsset> tempSoundFiles)

@@ -6,13 +6,14 @@ import com.vaadin.flow.component.checkbox.Checkbox;
  * @author Lukas Hartwig
  * @since 29.08.2022
  */
-public class SoundAssetImportRow
+public class AssetImportRow
 {
     private boolean shouldImport;
     private String fileName;
     private String absolutePath;
     private String relativePath;
     private Checkbox importCheckbox;
+    private int index;
 
     public boolean isShouldImport()
     {
@@ -72,12 +73,22 @@ public class SoundAssetImportRow
         this.importCheckbox = importCheckbox;
     }
 
+    public int getIndex()
+    {
+        return index;
+    }
+
+    public void setIndex(int index)
+    {
+        this.index = index;
+    }
+
     @Override
     public boolean equals(Object o)
     {
-        if (o instanceof SoundAssetImportRow)
+        if (o instanceof AssetImportRow)
         {
-            return ((SoundAssetImportRow)o).getAbsolutePath().equalsIgnoreCase(this.absolutePath);
+            return ((AssetImportRow)o).getAbsolutePath().equalsIgnoreCase(this.absolutePath);
         }
 
         return false;

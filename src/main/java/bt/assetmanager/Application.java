@@ -10,6 +10,7 @@ import com.vaadin.flow.component.page.AppShellConfigurator;
 import com.vaadin.flow.server.PWA;
 import com.vaadin.flow.theme.Theme;
 import com.vaadin.flow.theme.lumo.Lumo;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -17,10 +18,7 @@ import org.springframework.boot.logging.LoggingSystem;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.event.EventListener;
 
-import javax.imageio.ImageIO;
-import java.awt.*;
 import java.io.IOException;
-import java.net.URI;
 import java.util.logging.Level;
 
 /**
@@ -35,6 +33,9 @@ import java.util.logging.Level;
 @NpmPackage(value = "line-awesome", version = "1.3.0")
 public class Application extends SpringBootServletInitializer implements AppShellConfigurator
 {
+    @Value("${server.port}")
+    private int serverPort;
+
     public static void main(String[] args) throws IOException
     {
         // disable logging system to force spring into using SLF4J binding
@@ -63,12 +64,12 @@ public class Application extends SpringBootServletInitializer implements AppShel
     {
         try
         {
-            new SystemTrayOptions(ImageIO.read(SystemTrayOptions.class.getResourceAsStream("/trayicon.png")));
-            Desktop.getDesktop().browse(new URI("http://localhost:4567/images"));
+            var systemTray = new SystemTrayOptions(this.serverPort);
+            systemTray.openBrowser();
         }
-        catch (Exception e)
+        catch (IOException e)
         {
-            Log.error("Could not open browser", e);
+            Log.error("Failed to load system tray icon", e);
         }
     }
 }

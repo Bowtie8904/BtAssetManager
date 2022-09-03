@@ -14,7 +14,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import org.springframework.beans.factory.annotation.Autowired;
 
-@PageTitle("Images")
+@PageTitle("Asset manager - Images")
 @Route(value = "images", layout = MainLayout.class)
 @RouteAlias(value = "", layout = MainLayout.class)
 @Uses(Icon.class)

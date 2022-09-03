@@ -3,7 +3,9 @@ package bt.assetmanager.tray;
 import bt.gui.swing.tray.DefaultSwingSystemTrayFrame;
 import bt.log.Log;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
+import java.io.IOException;
 import java.net.URI;
 
 /**
@@ -12,23 +14,21 @@ import java.net.URI;
  */
 public class SystemTrayOptions extends DefaultSwingSystemTrayFrame
 {
-    public SystemTrayOptions(Image icon)
+    private String url;
+
+    public SystemTrayOptions(int port) throws IOException
     {
-        super(icon);
+        super(ImageIO.read(SystemTrayOptions.class.getResourceAsStream("/trayicon.png")));
+
+        this.url = "http://localhost:" + port + "/images";
+
         var settings = getSystemTraySettings();
 
         settings.addLabel("Asset manager");
         settings.addSeparator();
 
         settings.addOption("Open in browser", e -> {
-            try
-            {
-                Desktop.getDesktop().browse(new URI("http://localhost:4567/images"));
-            }
-            catch (Exception ex)
-            {
-                Log.error("Could not open browser", ex);
-            }
+
         });
 
         settings.addOption("Shutdown", e ->
@@ -37,5 +37,17 @@ public class SystemTrayOptions extends DefaultSwingSystemTrayFrame
         });
 
         sendToSystemTray();
+    }
+
+    public void openBrowser()
+    {
+        try
+        {
+            Desktop.getDesktop().browse(new URI(this.url));
+        }
+        catch (Exception ex)
+        {
+            Log.error("Could not open browser", ex);
+        }
     }
 }

@@ -46,7 +46,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@PageTitle("Import")
+@PageTitle("Asset manager - Import")
 @Route(value = "import", layout = MainLayout.class)
 @Uses(Icon.class)
 public class ImportView extends Div

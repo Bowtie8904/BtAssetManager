@@ -13,7 +13,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 
-@PageTitle("Asset manager - Sounds")
+@PageTitle("Sounds - Asset manager")
 @Route(value = "sounds", layout = MainLayout.class)
 @Uses(Icon.class)
 public class SoundsView extends Div

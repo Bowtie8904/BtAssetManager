@@ -46,7 +46,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@PageTitle("Asset manager - Import")
+@PageTitle("Import - Asset manager")
 @Route(value = "import", layout = MainLayout.class)
 @Uses(Icon.class)
 public class ImportView extends Div
@@ -189,9 +189,12 @@ public class ImportView extends Div
         tree.setWidth("750px");
         tree.setHeight("500px");
 
+        HorizontalLayout buttonLayout = new HorizontalLayout();
+        buttonLayout.setVerticalComponentAlignment(FlexComponent.Alignment.CENTER, selectButton, closeButton);
+        buttonLayout.add(selectButton, UIUtils.widthFiller("10px"), closeButton);
+
         dialog.add(tree);
-        dialog.add(selectButton);
-        dialog.add(closeButton);
+        dialog.add(buttonLayout);
 
         if (selectedOriginDirectory != null)
         {
@@ -262,6 +265,13 @@ public class ImportView extends Div
 
             List<TempImageAsset> tempImageFiles = new LinkedList<>();
             List<TempSoundAsset> tempSoundFiles = new LinkedList<>();
+
+            if (this.directoryTextField.getValue().trim().isEmpty())
+            {
+                this.directoryTextField.setErrorMessage("Select a folder to search in");
+                this.directoryTextField.setInvalid(true);
+                return;
+            }
 
             selectedOriginDirectory = new File(this.directoryTextField.getValue());
 
@@ -380,6 +390,7 @@ public class ImportView extends Div
         buttonLayout.add(this.selectAllImportCheckboxButton, this.deselectAllImportCheckboxButton);
 
         this.audioPlayer = new AudioPlayer();
+        this.audioPlayer.setVisible(false);
 
         Component[] fields = new Component[] { this.directoryTextField,
                                                this.browseOriginButton,
@@ -652,6 +663,7 @@ public class ImportView extends Div
                                                  });
 
                                                  this.audioPlayer.setSource(soundResource);
+                                                 this.audioPlayer.setVisible(true);
                                                  this.audioPlayer.play();
                                              });
 

@@ -51,7 +51,7 @@ public class Application extends SpringBootServletInitializer implements AppShel
 
         Log.createDefaultLogFolder();
         Log.configureDefaultJDKLogger(new ConsoleLoggerHandler(config), new FileLoggerHandler(config,
-                                                                                              FileLoggerHandler.DEFAULT_FILE_PATTERN,
+                                                                                              "./logs/assetmanager_%u.log",
                                                                                               10_000_000,
                                                                                               10,
                                                                                               true));

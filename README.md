@@ -14,7 +14,7 @@ The tool has been tested with files of the following format:
 - mp3
 
 
-It is intended for sounds files and pixel art images. Using large scale textures might lead to poor performance.
+It is intended for sound files and pixel art images. Using large scale textures might lead to poor performance.
 
 
 ## Getting started

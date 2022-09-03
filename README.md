@@ -95,7 +95,7 @@ But if I would rather find headgear that is more of the armor kind then I can ty
 
 ![img_8.png](img_8.png)
 
-If you want to search for filenames instead of tags then you can check the little bos below the search field. The manager will now search for imported files with names that contain the text from the
+If you want to search for filenames instead of tags then you can check the little box below the search field. The manager will now search for imported files with names that contain the text from the
 search field. You can NOT specifiy multiple values with commas. Searching for "helmet" will for example find files like armor_helmet_01.png.
 
 Clicking on an image will show a large version of it on the right side. You can now also click on the "Open folder" button to open the folder that the file in contained in.

@@ -28,7 +28,7 @@ public class SystemTrayOptions extends DefaultSwingSystemTrayFrame
         settings.addSeparator();
 
         settings.addOption("Open in browser", e -> {
-
+            openBrowser();
         });
 
         settings.addOption("Shutdown", e ->

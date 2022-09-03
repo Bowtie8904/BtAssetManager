@@ -4,6 +4,19 @@ This application allows you to easily categorize large amounts of image and soun
 
 You can apply tags to each individual file to search for them based on your own criteria.
 
+The tool has been tested with files of the following format:
+
+- jpg
+- png
+- gif
+- svg
+- wav
+- mp3
+
+
+It is intended for sounds files and pixel art images. Using large scale textures might lead to poor performance.
+
+
 ## Getting started
 
 Java 17 is required to run this application. You can download Java from different vendors, for example [Adoptium](https://adoptium.net/temurin/releases).

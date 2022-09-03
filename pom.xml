@@ -5,7 +5,7 @@
     <!-- Project from https://start.vaadin.com/project/1f82cb15-9af4-4df7-aac2-1a9d16478238 -->
     <groupId>bt.assetmanager</groupId>
     <artifactId>btassetmanager</artifactId>
-    <name>btassetmanager</name>
+    <name>BtAssetManager</name>
     <version>1.0</version>
     <packaging>jar</packaging>
 

@@ -1,47 +1,96 @@
 # BtAssetManager
 
-This project can be used as a starting point to create your own Vaadin application with Spring Boot.
-It contains all the necessary configuration and some placeholder files to get you started.
+This application allows you to easily categorize large amounts of image and sound files.
 
-## Running the application
+You can apply tags to each individual file to search for them based on your own criteria.
 
-The project is a standard Maven project. To run it from the command line,
-type `mvnw` (Windows), or `./mvnw` (Mac & Linux), then open
-http://localhost:8080 in your browser.
+## Getting started
 
-You can also import the project to your IDE of choice as you would with any
-Maven project. Read more on [how to import Vaadin projects to different 
-IDEs](https://vaadin.com/docs/latest/flow/guide/step-by-step/importing) (Eclipse, IntelliJ IDEA, NetBeans, and VS Code).
+Java 17 is required to run this application. You can download Java from different vendors, for example [Adoptium](https://adoptium.net/temurin/releases).
 
-## Deploying to Production
+Go to the [release page](https://github.com/Bowtie8904/BtAssetManager/releases) and download the jar file from the latest release.
 
-To create a production build, call `mvnw clean package -Pproduction` (Windows),
-or `./mvnw clean package -Pproduction` (Mac & Linux).
-This will build a JAR file with all the dependencies and front-end resources,
-ready to be deployed. The file can be found in the `target` folder after the build completes.
+After the download you can double click the jar file to start the asset manager. It will now create its database structure. Once its started up it will open your default browser and navigate to the
+managers website. You should now also see a small blue bowtie in your system tray. Right clicking that icon allows you to open the browser again or to shut down the application.
 
-Once the JAR file is built, you can run it using
-`java -jar target/btassetmanager-1.0-SNAPSHOT.jar`
+## Import files
 
-## Project structure
+To search for files you first need to import them on the "Import" page. Use the navigation bar at the top to select the "Import" tab.
 
-- `MainLayout.java` in `src/main/java` contains the navigation setup (i.e., the
-  side/top bar and the main menu). This setup uses
-  [App Layout](https://vaadin.com/components/vaadin-app-layout).
-- `views` package in `src/main/java` contains the server-side Java views of your application.
-- `views` folder in `frontend/` contains the client-side JavaScript views of your application.
-- `themes` folder in `frontend/` contains the custom CSS styles.
+![img_1.png](img_1.png)
 
-## Useful links
+On the right side of the import page you see a bunch of text fields and buttons.
 
-- Read the documentation at [vaadin.com/docs](https://vaadin.com/docs).
-- Follow the tutorials at [vaadin.com/tutorials](https://vaadin.com/tutorials).
-- Watch training videos and get certified at [vaadin.com/learn/training](https://vaadin.com/learn/training).
-- Create new projects at [start.vaadin.com](https://start.vaadin.com/).
-- Search UI components and their usage examples at [vaadin.com/components](https://vaadin.com/components).
-- View use case applications that demonstrate Vaadin capabilities at [vaadin.com/examples-and-demos](https://vaadin.com/examples-and-demos).
-- Discover Vaadin's set of CSS utility classes that enable building any UI without custom CSS in the [docs](https://vaadin.com/docs/latest/ds/foundation/utility-classes). 
-- Find a collection of solutions to common use cases in [Vaadin Cookbook](https://cookbook.vaadin.com/).
-- Find Add-ons at [vaadin.com/directory](https://vaadin.com/directory).
-- Ask questions on [Stack Overflow](https://stackoverflow.com/questions/tagged/vaadin) or join our [Discord channel](https://discord.gg/MYFq5RTbBn).
-- Report issues, create pull requests in [GitHub](https://github.com/vaadin/platform).
+- **Directory**
+    - This is where you specifiy which folder the manager should search for files in. It can be any folder on your computer and you can still import files from other folders later on, so there is no
+      need to put everything in one place
+    - Either type in your folders name or use the browse button to select it from the list
+- **Image and sound file endings**
+    - Here you specify which file endings you want to import for both images and sounds
+    - You can use commas to separate multiple endings
+    - The manager will only look for files that have file endings in one of your text boxes
+
+  ![img_2.png](img_2.png)
+- **Search**
+    - Once you have put in a directory to search in and file endings to search for you can press the "Search" button
+    - The manager will now go through the directory and all its sub-directories and add the found files to the two lists on the left
+- **Apply tags on import**
+    - You can already tag files when you import them
+    - Add all the tags that you want to apply to the selected files in this field
+    - You can add multiple tags by separating them with a comma
+    - The manager will suggest similar tags that you already used before
+
+  ![img_3.png](img_3.png)
+- **Import all and import none**
+    - These buttons will either select all found files for import or deselect them all
+- **Import**
+    - This is the button that this page is all about
+    - Pressing this button will import all selected files from the two lists on the left
+    - Imported files will disappear from the lists and wont return if you press search again
+    - After importing you can find the files depending on their type either on the "Images" or the "Sounds" page
+    - If you specified tags before the import then those will be applied to the files
+    - If you did not specify and tags then these files will have the tag "UNTAGGED" so that you can find them easily
+
+After the import your files are NOT moved. The manager does only save the path to those files. This also means that if you move the files to a different location later on the manager wont be able to
+display them anymore.
+
+![img_4.png](img_4.png)
+
+## Search for files
+
+Searching for images and sounds functions the same, so I will only show screenshots on the image search.
+
+Once you have imported your files you can go over to the "Images" or "Sounds" tabs to search for specific tags.
+
+If you just want to look at all your files then click the search button once.
+
+The first button at the top right lets you switch between a grid and a list view. The list view gives you a bit more information about the filename and path while the grid view allows to display more
+images at once.
+
+![img_5.png](img_5.png)
+
+![img_6.png](img_6.png)
+
+To search for files you can type tags into the search text field. You can specifiy multiple tags by separating them with a comma. For an image to be found it needs to have all tags in the search field
+applied to it. It can have additional ones though that are not in the search field.
+
+If I want to find all my images of head gear then I can search for the tag "head".
+
+![img_7.png](img_7.png)
+
+But if I would rather find headgear that is more of the armor kind then I can type in "head, armor".
+
+![img_8.png](img_8.png)
+
+If you want to search for filenames instead of tags then you can check the little bos below the search field. The manager will now search for imported files with names that contain the text from the
+search field. You can NOT specifiy multiple values with commas. Searching for "helmet" will for example find files like armor_helmet_01.png.
+
+Clicking on an image will show a large version of it on the right side. You can now also click on the "Open folder" button to open the folder that the file in contained in.
+
+At the bottom you can apply single tags to the file or remove existing ones by pressing the "X" button. If you remove all tags from a file it will receive the "UNTAGGED" tag automatically.
+
+![img_11.png](img_11.png)
+
+If you scroll to the very bottom on the right side you find a delete button. Ths allows you to remove single files from the manager. You can reimport them on the "Import" page.
+
+![img_10.png](img_10.png)

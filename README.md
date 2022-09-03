@@ -104,6 +104,6 @@ At the bottom you can apply single tags to the file or remove existing ones by p
 
 ![img_11.png](img_11.png)
 
-If you scroll to the very bottom on the right side you find a delete button. Ths allows you to remove single files from the manager. You can reimport them on the "Import" page.
+If you scroll to the very bottom on the right side you find a delete button. This allows you to remove single files from the manager. You can reimport them on the "Import" page.
 
 ![img_10.png](img_10.png)

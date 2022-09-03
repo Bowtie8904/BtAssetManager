@@ -1,6 +1,7 @@
 package bt.assetmanager.components;
 
 import bt.assetmanager.data.service.TagService;
+import bt.utils.Null;
 import com.vaadin.componentfactory.Autocomplete;
 
 import java.util.Arrays;
@@ -50,11 +51,13 @@ public class TagSearchTextField extends Autocomplete
             {
                 this.processAutoCompleteApplyEvent = false;
 
-                String[] singleTags = this.currentTagTextFieldValue.split(",");
+                String[] singleTags = Null.nullValue(this.currentTagTextFieldValue, "").split(",");
                 List<String> newTagList = Arrays.asList(singleTags).stream().map(String::trim).collect(Collectors.toList());
                 newTagList.set(newTagList.size() - 1, e.getValue());
 
                 setValue(String.join(", ", newTagList));
+
+                focus();
 
                 executorService.schedule(() -> this.processAutoCompleteApplyEvent = true, 200, TimeUnit.MILLISECONDS);
             }

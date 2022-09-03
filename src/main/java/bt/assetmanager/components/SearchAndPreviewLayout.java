@@ -7,7 +7,6 @@ import bt.assetmanager.data.service.AssetService;
 import bt.assetmanager.data.service.TagService;
 import bt.assetmanager.util.UIUtils;
 import bt.log.Log;
-import com.vaadin.componentfactory.Autocomplete;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -48,8 +47,8 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
     private Class<T> clazz;
     private AudioPlayer audioPlayer;
     private Image image;
-    private Autocomplete searchTextField;
-    private Autocomplete addTagTextField;
+    private TagSearchTextField searchTextField;
+    private TagSearchTextField addTagTextField;
     private Checkbox fileNameFilterCheckbox;
     private Button searchButton;
     private Button addTagButton;
@@ -261,6 +260,8 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
             this.assetService.save(this.currentlySelectedElement);
             this.tagList.setItems(this.currentlySelectedElement.getTags().stream().map(Tag::getName));
         }
+
+        this.addTagTextField.focus();
     }
 
     private void onRemoveTagButton(String tagName)
@@ -311,5 +312,7 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
         {
             this.onSearchConsumer.accept(resultSet);
         }
+
+        this.searchTextField.focus();
     }
 }

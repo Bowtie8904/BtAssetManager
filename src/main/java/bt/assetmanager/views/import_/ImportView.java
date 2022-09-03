@@ -174,7 +174,7 @@ public class ImportView extends Div
                 }
 
                 this.directoryTextField.setValue(file.getAbsolutePath());
-                this.selectedOriginDirectory = file;
+                selectedOriginDirectory = file;
                 dialog.close();
             }
         });
@@ -191,9 +191,9 @@ public class ImportView extends Div
         dialog.add(selectButton);
         dialog.add(closeButton);
 
-        if (this.selectedOriginDirectory != null)
+        if (selectedOriginDirectory != null)
         {
-            File parentDir = this.selectedOriginDirectory.getParentFile();
+            File parentDir = selectedOriginDirectory.getParentFile();
             List<File> parentDirs = new ArrayList<>();
 
             while (parentDir != null)
@@ -203,7 +203,7 @@ public class ImportView extends Div
             }
 
             tree.expand(parentDirs);
-            tree.scrollToItem(this.selectedOriginDirectory);
+            tree.scrollToItem(selectedOriginDirectory);
         }
 
         dialog.open();
@@ -220,7 +220,6 @@ public class ImportView extends Div
 
         FormLayout formLayout = new FormLayout();
         this.directoryTextField = new TextField("Directory");
-        this.directoryTextField.setEnabled(false);
         this.browseOriginButton = new Button("Browse");
         this.browseOriginButton.addClickListener(e -> selectOriginDirectory());
         this.imageFileEndingsTextField = new TextField("Image file endings (comma separated)");
@@ -252,7 +251,15 @@ public class ImportView extends Div
 
             List<TempImageAsset> tempImageFiles = new LinkedList<>();
             List<TempSoundAsset> tempSoundFiles = new LinkedList<>();
-            fillFileGrids(this.selectedOriginDirectory, tempImageFiles, tempSoundFiles);
+
+            selectedOriginDirectory = new File(this.directoryTextField.getValue());
+
+            if (!selectedOriginDirectory.isDirectory())
+            {
+                selectedOriginDirectory = selectedOriginDirectory.getParentFile();
+            }
+
+            fillFileGrids(selectedOriginDirectory, tempImageFiles, tempSoundFiles);
 
             this.tempImageRepo.saveAll(tempImageFiles);
             this.tempSoundRepo.saveAll(tempSoundFiles);
@@ -264,7 +271,7 @@ public class ImportView extends Div
                 var row = new ImageAssetImportRow();
                 row.setFileName(temp.getFileName());
                 row.setAbsolutePath(temp.getPath());
-                row.setRelativePath(temp.getPath().substring(this.selectedOriginDirectory.getAbsolutePath().length()));
+                row.setRelativePath(temp.getPath().substring(selectedOriginDirectory.getAbsolutePath().length()));
                 return row;
             }).collect(Collectors.toList());
 
@@ -272,7 +279,7 @@ public class ImportView extends Div
                 var row = new SoundAssetImportRow();
                 row.setFileName(temp.getFileName());
                 row.setAbsolutePath(temp.getPath());
-                row.setRelativePath(temp.getPath().substring(this.selectedOriginDirectory.getAbsolutePath().length()));
+                row.setRelativePath(temp.getPath().substring(selectedOriginDirectory.getAbsolutePath().length()));
                 return row;
             }).collect(Collectors.toList());
 

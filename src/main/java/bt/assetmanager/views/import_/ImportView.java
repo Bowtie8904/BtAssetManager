@@ -222,6 +222,12 @@ public class ImportView extends Div
 
         FormLayout formLayout = new FormLayout();
         this.directoryTextField = new TextField("Directory");
+
+        if (selectedOriginDirectory != null && selectedOriginDirectory.exists())
+        {
+            this.directoryTextField.setValue(selectedOriginDirectory.getAbsolutePath());
+        }
+
         this.browseOriginButton = new Button("Browse");
         this.browseOriginButton.addClickListener(e -> selectOriginDirectory());
         this.imageFileEndingsTextField = new TextField("Image file endings (comma separated)");
@@ -259,9 +265,15 @@ public class ImportView extends Div
 
             selectedOriginDirectory = new File(this.directoryTextField.getValue());
 
-            if (!selectedOriginDirectory.isDirectory())
+            if (selectedOriginDirectory.exists() && !selectedOriginDirectory.isDirectory())
             {
                 selectedOriginDirectory = selectedOriginDirectory.getParentFile();
+            }
+
+            if (!selectedOriginDirectory.exists())
+            {
+                Notification.show("Folder " + selectedOriginDirectory.getAbsolutePath() + " does not exist");
+                return;
             }
 
             fillFileGrids(selectedOriginDirectory, tempImageFiles, tempSoundFiles);

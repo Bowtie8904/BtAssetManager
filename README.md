@@ -14,7 +14,7 @@ The tool has been tested with files of the following format:
 - mp3
 
 
-It is intended for sounds files and pixel art images. Using large scale textures might lead to poor performance.
+It is intended for sound files and pixel art images. Using large scale textures might lead to poor performance.
 
 
 ## Getting started
@@ -95,7 +95,7 @@ But if I would rather find headgear that is more of the armor kind then I can ty
 
 ![img_8.png](img_8.png)
 
-If you want to search for filenames instead of tags then you can check the little bos below the search field. The manager will now search for imported files with names that contain the text from the
+If you want to search for filenames instead of tags then you can check the little box below the search field. The manager will now search for imported files with names that contain the text from the
 search field. You can NOT specifiy multiple values with commas. Searching for "helmet" will for example find files like armor_helmet_01.png.
 
 Clicking on an image will show a large version of it on the right side. You can now also click on the "Open folder" button to open the folder that the file in contained in.
@@ -104,6 +104,6 @@ At the bottom you can apply single tags to the file or remove existing ones by p
 
 ![img_11.png](img_11.png)
 
-If you scroll to the very bottom on the right side you find a delete button. Ths allows you to remove single files from the manager. You can reimport them on the "Import" page.
+If you scroll to the very bottom on the right side you find a delete button. This allows you to remove single files from the manager. You can reimport them on the "Import" page.
 
 ![img_10.png](img_10.png)

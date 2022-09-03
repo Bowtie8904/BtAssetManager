@@ -49,7 +49,7 @@ On the right side of the import page you see a bunch of text fields and buttons.
     - Imported files will disappear from the lists and wont return if you press search again
     - After importing you can find the files depending on their type either on the "Images" or the "Sounds" page
     - If you specified tags before the import then those will be applied to the files
-    - If you did not specify and tags then these files will have the tag "UNTAGGED" so that you can find them easily
+    - If you did not specify any tags then these files will have the tag "UNTAGGED" so that you can find them easily
 
 After the import your files are NOT moved. The manager does only save the path to those files. This also means that if you move the files to a different location later on the manager wont be able to
 display them anymore.
@@ -58,7 +58,7 @@ display them anymore.
 
 ## Search for files
 
-Searching for images and sounds functions the same, so I will only show screenshots on the image search.
+Searching for images and sounds functions the same, so I will only show screenshots of the image search.
 
 Once you have imported your files you can go over to the "Images" or "Sounds" tabs to search for specific tags.
 

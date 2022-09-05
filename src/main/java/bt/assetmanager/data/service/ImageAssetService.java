@@ -11,7 +11,7 @@ import java.util.List;
  * @since 31.08.2022
  */
 @Service
-public class ImageAssetService implements AssetService<ImageAsset>
+public class ImageAssetService extends BaseAssetService<ImageAsset>
 {
     @Autowired
     private ImageAssetRepository imageAssetRepo;
@@ -32,6 +32,7 @@ public class ImageAssetService implements AssetService<ImageAsset>
     public void save(ImageAsset entity)
     {
         this.imageAssetRepo.save(entity);
+        super.save(entity);
     }
 
     @Override

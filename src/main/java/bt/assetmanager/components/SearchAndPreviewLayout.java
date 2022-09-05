@@ -312,7 +312,5 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
         {
             this.onSearchConsumer.accept(resultSet);
         }
-
-        this.searchTextField.focus();
     }
 }

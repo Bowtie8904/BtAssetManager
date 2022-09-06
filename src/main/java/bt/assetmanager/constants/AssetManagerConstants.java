@@ -8,10 +8,11 @@ import java.nio.file.Path;
  */
 public final class AssetManagerConstants
 {
-    public static final Path TAMP_FILE_DIRECTORY = Path.of(".\\tempFiles\\");
+    public static final Path TEMP_FILE_DIRECTORY = Path.of(".\\tempFiles\\");
+    public static final String UNTAGGED_TAG_NAME = "UNTAGGED";
 
     static
     {
-        TAMP_FILE_DIRECTORY.toFile().mkdirs();
+        TEMP_FILE_DIRECTORY.toFile().mkdirs();
     }
 }

@@ -14,6 +14,7 @@ import org.apache.commons.imaging.formats.tiff.TiffImageMetadata;
 import org.apache.commons.imaging.formats.tiff.constants.MicrosoftTagConstants;
 import org.apache.commons.imaging.formats.tiff.write.TiffOutputDirectory;
 import org.apache.commons.imaging.formats.tiff.write.TiffOutputSet;
+import org.apache.commons.lang3.SystemUtils;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -58,25 +59,28 @@ public final class ImageFileMetadataUtils
     {
         Set<String> tagSet = new HashSet<>();
 
-        try
+        if (SystemUtils.IS_OS_WINDOWS && ImageFileMetadataUtils.isValidImageFormat(imageFile))
         {
-            ImageMetadata metadata = Imaging.getMetadata(imageFile);
-
-            if (metadata instanceof JpegImageMetadata)
+            try
             {
-                JpegImageMetadata jpegMetadata = (JpegImageMetadata)metadata;
+                ImageMetadata metadata = Imaging.getMetadata(imageFile);
 
-                TiffField field = jpegMetadata.findEXIFValueWithExactMatch(MicrosoftTagConstants.EXIF_TAG_XPKEYWORDS);
-
-                for (String tag : field.getValue().toString().split(";"))
+                if (metadata instanceof JpegImageMetadata)
                 {
-                    tagSet.add(tag.trim().toUpperCase());
+                    JpegImageMetadata jpegMetadata = (JpegImageMetadata)metadata;
+
+                    TiffField field = jpegMetadata.findEXIFValueWithExactMatch(MicrosoftTagConstants.EXIF_TAG_XPKEYWORDS);
+
+                    for (String tag : field.getValue().toString().split(";"))
+                    {
+                        tagSet.add(tag.trim().toUpperCase());
+                    }
                 }
             }
-        }
-        catch (IOException | ImageReadException e)
-        {
-            Log.error("Failed to read tags from Windows file metadata", e);
+            catch (IOException | ImageReadException e)
+            {
+                Log.error("Failed to read tags from Windows file metadata", e);
+            }
         }
 
         return tagSet;
@@ -84,53 +88,56 @@ public final class ImageFileMetadataUtils
 
     public static void saveWindowsExifMetadataTags(File imageFile, List<Tag> tags)
     {
-        // create semicolon separated list of the tags
-        String tagString = tags.stream()
-                               .map(Tag::getName)
-                               .collect(Collectors.joining(";"));
-
-        try
+        if (SystemUtils.IS_OS_WINDOWS)
         {
-            TiffOutputSet outputSet = null;
+            // create semicolon separated list of the tags
+            String tagString = tags.stream()
+                                   .map(Tag::getName)
+                                   .collect(Collectors.joining(";"));
 
-            ImageMetadata metadata = Imaging.getMetadata(imageFile);
-            JpegImageMetadata jpegMetadata = (JpegImageMetadata)metadata;
-
-            if (jpegMetadata != null)
+            try
             {
-                TiffImageMetadata exif = jpegMetadata.getExif();
+                TiffOutputSet outputSet = null;
 
-                if (null != exif)
+                ImageMetadata metadata = Imaging.getMetadata(imageFile);
+                JpegImageMetadata jpegMetadata = (JpegImageMetadata)metadata;
+
+                if (jpegMetadata != null)
                 {
-                    outputSet = exif.getOutputSet();
+                    TiffImageMetadata exif = jpegMetadata.getExif();
+
+                    if (null != exif)
+                    {
+                        outputSet = exif.getOutputSet();
+                    }
+                }
+
+                if (outputSet == null)
+                {
+                    outputSet = new TiffOutputSet();
+                }
+
+                // overwrite tags in file metadata
+                TiffOutputDirectory exifDirectory = outputSet.getOrCreateRootDirectory();
+                exifDirectory.removeField(MicrosoftTagConstants.EXIF_TAG_XPKEYWORDS);
+                exifDirectory.add(MicrosoftTagConstants.EXIF_TAG_XPKEYWORDS, tagString);
+
+                Path tempDestFile = Path.of(AssetManagerConstants.TEMP_FILE_DIRECTORY.toString(), imageFile.getName());
+
+                try (FileOutputStream fos = new FileOutputStream(tempDestFile.toFile());
+                     OutputStream os = new BufferedOutputStream(fos))
+                {
+                    // write new data to a new temp file
+                    new ExifRewriter().updateExifMetadataLossy(imageFile, os, outputSet);
+
+                    // replace the original file with the just created temp file
+                    Files.move(tempDestFile, imageFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 }
             }
-
-            if (outputSet == null)
+            catch (IOException | ImageReadException | ImageWriteException e)
             {
-                outputSet = new TiffOutputSet();
+                Log.error("Failed to save tags to Windows file metadata " + imageFile.getAbsolutePath(), e);
             }
-
-            // overwrite tags in file metadata
-            TiffOutputDirectory exifDirectory = outputSet.getOrCreateRootDirectory();
-            exifDirectory.removeField(MicrosoftTagConstants.EXIF_TAG_XPKEYWORDS);
-            exifDirectory.add(MicrosoftTagConstants.EXIF_TAG_XPKEYWORDS, tagString);
-
-            Path tempDestFile = Path.of(AssetManagerConstants.TEMP_FILE_DIRECTORY.toString(), imageFile.getName());
-
-            try (FileOutputStream fos = new FileOutputStream(tempDestFile.toFile());
-                 OutputStream os = new BufferedOutputStream(fos))
-            {
-                // write new data to a new temp file
-                new ExifRewriter().updateExifMetadataLossy(imageFile, os, outputSet);
-
-                // replace the original file with the just created temp file
-                Files.move(tempDestFile, imageFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
-        catch (IOException | ImageReadException | ImageWriteException e)
-        {
-            Log.error("Failed to save tags to Windows file metadata", e);
         }
     }
 }

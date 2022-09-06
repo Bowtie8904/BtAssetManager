@@ -4,6 +4,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import java.util.Objects;
 
 /**
  * @author Lukas Hartwig
@@ -37,6 +38,12 @@ public class Tag
     public void setName(String name)
     {
         this.name = name;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(name);
     }
 
     @Override

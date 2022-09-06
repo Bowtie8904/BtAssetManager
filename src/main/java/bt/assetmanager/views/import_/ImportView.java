@@ -3,9 +3,11 @@ package bt.assetmanager.views.import_;
 import bt.assetmanager.components.AudioPlayer;
 import bt.assetmanager.components.ScrollTreeGrid;
 import bt.assetmanager.components.TagSearchTextField;
+import bt.assetmanager.constants.AssetManagerConstants;
 import bt.assetmanager.data.entity.*;
 import bt.assetmanager.data.service.*;
 import bt.assetmanager.util.UIUtils;
+import bt.assetmanager.util.metadata.FileMetadataUtils;
 import bt.assetmanager.views.MainLayout;
 import bt.log.Log;
 import com.vaadin.componentfactory.Autocomplete;
@@ -40,10 +42,7 @@ import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @PageTitle("Import - Asset manager")
@@ -464,11 +463,6 @@ public class ImportView extends Div
             }
         }
 
-        if (tags.isEmpty())
-        {
-            tags.add(this.tagService.obtainTag("UNTAGGED"));
-        }
-
         List<AssetImportRow> selectedImages = this.imageFiles.stream()
                                                              .filter(AssetImportRow::isShouldImport)
                                                              .collect(Collectors.toList());
@@ -481,13 +475,26 @@ public class ImportView extends Div
 
         Log.info("Starting to import " + selectedImages.size() + " images");
 
+        Tag untaggedTag = this.tagService.obtainTag(AssetManagerConstants.UNTAGGED_TAG_NAME);
+
         for (AssetImportRow row : selectedImages)
         {
             ImageAsset asset = new ImageAsset();
-            asset.setTags(tags);
-
             asset.setPath(row.getAbsolutePath());
             asset.setFileName(row.getFileName());
+            Set<Tag> tagSet = new HashSet<>(tags);
+
+            for (String tag : FileMetadataUtils.getTagsFromMetadataFile(asset))
+            {
+                tagSet.add(this.tagService.obtainTag(tag.trim()));
+            }
+
+            if (tagSet.isEmpty())
+            {
+                tagSet.add(untaggedTag);
+            }
+
+            asset.setTags(new ArrayList<>(tagSet));
 
             this.imageService.save(asset);
             Log.debug("Saved image asset " + asset.getPath());
@@ -511,10 +518,21 @@ public class ImportView extends Div
         for (AssetImportRow row : selectedSounds)
         {
             SoundAsset asset = new SoundAsset();
-            asset.setTags(tags);
-
             asset.setPath(row.getAbsolutePath());
             asset.setFileName(row.getFileName());
+            Set<Tag> tagSet = new HashSet<>(tags);
+
+            for (String tag : FileMetadataUtils.getTagsFromMetadataFile(asset))
+            {
+                tagSet.add(this.tagService.obtainTag(tag.trim()));
+            }
+
+            if (tagSet.isEmpty())
+            {
+                tagSet.add(untaggedTag);
+            }
+
+            asset.setTags(new ArrayList<>(tagSet));
 
             this.soundService.save(asset);
             Log.debug("Saved sound asset " + asset.getPath());

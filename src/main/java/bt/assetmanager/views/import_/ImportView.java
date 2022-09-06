@@ -58,8 +58,8 @@ public class ImportView extends Div
     private Grid<AssetImportRow> soundGrid = new Grid<>(AssetImportRow.class, false);
     private ImageFileEndingRepository imageFileEndingRepo;
     private SoundFileEndingRepository soundFileEndingRepo;
-    private ImageAssetRepository imageRepo;
-    private SoundAssetRepository soundRepo;
+    private ImageAssetService imageService;
+    private SoundAssetService soundService;
     private TagService tagService;
     private List<String> soundFileEndings;
     private List<String> imageFileEndings;
@@ -84,16 +84,16 @@ public class ImportView extends Div
     public ImportView(ImageFileEndingRepository imageFileEndingRepo,
                       SoundFileEndingRepository soundFileEndingRepo,
                       TagService tagService,
-                      ImageAssetRepository imageRepo,
-                      SoundAssetRepository soundRepo,
+                      ImageAssetService imageService,
+                      SoundAssetService soundService,
                       TempImageAssetRepository tempImageRepo,
                       TempSoundAssetRepository tempSoundRepo)
     {
         this.imageFileEndingRepo = imageFileEndingRepo;
         this.soundFileEndingRepo = soundFileEndingRepo;
         this.tagService = tagService;
-        this.imageRepo = imageRepo;
-        this.soundRepo = soundRepo;
+        this.imageService = imageService;
+        this.soundService = soundService;
         this.tempImageRepo = tempImageRepo;
         this.tempSoundRepo = tempSoundRepo;
 
@@ -489,7 +489,7 @@ public class ImportView extends Div
             asset.setPath(row.getAbsolutePath());
             asset.setFileName(row.getFileName());
 
-            this.imageRepo.save(asset);
+            this.imageService.save(asset);
             Log.debug("Saved image asset " + asset.getPath());
 
             this.imageFiles.remove(row);
@@ -516,7 +516,7 @@ public class ImportView extends Div
             asset.setPath(row.getAbsolutePath());
             asset.setFileName(row.getFileName());
 
-            this.soundRepo.save(asset);
+            this.soundService.save(asset);
             Log.debug("Saved sound asset " + asset.getPath());
 
             this.soundFiles.remove(row);

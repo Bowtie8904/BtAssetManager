@@ -212,6 +212,12 @@
             <artifactId>commons-imaging</artifactId>
             <version>1.0-alpha3</version>
         </dependency>
+
+        <dependency>
+            <groupId>io.github.fvarrui</groupId>
+            <artifactId>javapackager</artifactId>
+            <version>1.6.7</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -273,6 +279,26 @@
                         <configuration>
                             <productionMode>true</productionMode>
                         </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>io.github.fvarrui</groupId>
+                        <artifactId>javapackager</artifactId>
+                        <version>1.6.7</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>package</goal>
+                                </goals>
+                                <configuration>
+                                    <mainClass>bt.assetmanager.Application</mainClass>
+                                    <bundleJre>true</bundleJre>
+                                    <jrePath>${project.basedir}\jre\jdk-17.0.4.1+1-jre</jrePath>
+                                    <assetsDir>${project.basedir}\target\classes\META-INF\resources\icons</assetsDir>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>

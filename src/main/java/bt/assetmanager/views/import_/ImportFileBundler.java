@@ -52,7 +52,7 @@ public class ImportFileBundler
         return this.bundlesFiles.get(folder);
     }
 
-    class Bundle
+    public class Bundle
     {
         private List<AssetImportRow> imageAssets;
         private List<AssetImportRow> soundAssets;

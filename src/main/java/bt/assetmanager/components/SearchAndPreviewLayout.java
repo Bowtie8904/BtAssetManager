@@ -257,7 +257,7 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
             }
 
             this.currentlySelectedElement.setTags(tags);
-            this.assetService.save(this.currentlySelectedElement);
+            this.assetService.save(this.currentlySelectedElement, true);
             this.tagList.setItems(this.currentlySelectedElement.getTags().stream().map(Tag::getName));
         }
 
@@ -279,7 +279,7 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
         }
 
         this.currentlySelectedElement.setTags(tags);
-        this.assetService.save(this.currentlySelectedElement);
+        this.assetService.save(this.currentlySelectedElement, true);
         this.tagList.setItems(this.currentlySelectedElement.getTags().stream().map(Tag::getName));
     }
 
@@ -312,7 +312,5 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
         {
             this.onSearchConsumer.accept(resultSet);
         }
-
-        this.searchTextField.focus();
     }
 }

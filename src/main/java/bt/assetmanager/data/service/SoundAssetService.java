@@ -11,7 +11,7 @@ import java.util.List;
  * @since 31.08.2022
  */
 @Service
-public class SoundAssetService implements AssetService<SoundAsset>
+public class SoundAssetService extends BaseAssetService<SoundAsset>
 {
     @Autowired
     private SoundAssetRepository soundAssetRepo;
@@ -29,9 +29,10 @@ public class SoundAssetService implements AssetService<SoundAsset>
     }
 
     @Override
-    public void save(SoundAsset entity)
+    public void save(SoundAsset entity, boolean saveTagsInMetadataFile)
     {
         this.soundAssetRepo.save(entity);
+        super.save(entity, saveTagsInMetadataFile);
     }
 
     @Override

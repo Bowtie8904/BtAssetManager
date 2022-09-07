@@ -3,13 +3,16 @@ package bt.assetmanager.views.import_;
 import bt.assetmanager.components.AudioPlayer;
 import bt.assetmanager.components.ScrollTreeGrid;
 import bt.assetmanager.components.TagSearchTextField;
+import bt.assetmanager.constants.AssetManagerConstants;
 import bt.assetmanager.data.entity.*;
 import bt.assetmanager.data.service.*;
 import bt.assetmanager.util.UIUtils;
+import bt.assetmanager.util.metadata.FileMetadataUtils;
 import bt.assetmanager.views.MainLayout;
 import bt.log.Log;
 import com.vaadin.componentfactory.Autocomplete;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -26,6 +29,7 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
@@ -40,10 +44,9 @@ import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @PageTitle("Import - Asset manager")
@@ -52,14 +55,15 @@ import java.util.stream.Collectors;
 public class ImportView extends Div
 {
     private static File selectedOriginDirectory;
+    private static ExecutorService executorService = Executors.newCachedThreadPool();
     private TempImageAssetRepository tempImageRepo;
     private TempSoundAssetRepository tempSoundRepo;
     private Grid<AssetImportRow> imageGrid = new Grid<>(AssetImportRow.class, false);
     private Grid<AssetImportRow> soundGrid = new Grid<>(AssetImportRow.class, false);
     private ImageFileEndingRepository imageFileEndingRepo;
     private SoundFileEndingRepository soundFileEndingRepo;
-    private ImageAssetRepository imageRepo;
-    private SoundAssetRepository soundRepo;
+    private ImageAssetService imageService;
+    private SoundAssetService soundService;
     private TagService tagService;
     private List<String> soundFileEndings;
     private List<String> imageFileEndings;
@@ -79,21 +83,24 @@ public class ImportView extends Div
     private Button deselectAllImportCheckboxButton;
     private AssetImportRow lastCheckedImageRow;
     private AssetImportRow lastCheckedSoundRow;
+    private ProgressBar progressBar;
+    private Label progressLabel;
+    private Label progressFolderLabel;
 
     @Autowired
     public ImportView(ImageFileEndingRepository imageFileEndingRepo,
                       SoundFileEndingRepository soundFileEndingRepo,
                       TagService tagService,
-                      ImageAssetRepository imageRepo,
-                      SoundAssetRepository soundRepo,
+                      ImageAssetService imageService,
+                      SoundAssetService soundService,
                       TempImageAssetRepository tempImageRepo,
                       TempSoundAssetRepository tempSoundRepo)
     {
         this.imageFileEndingRepo = imageFileEndingRepo;
         this.soundFileEndingRepo = soundFileEndingRepo;
         this.tagService = tagService;
-        this.imageRepo = imageRepo;
-        this.soundRepo = soundRepo;
+        this.imageService = imageService;
+        this.soundService = soundService;
         this.tempImageRepo = tempImageRepo;
         this.tempSoundRepo = tempSoundRepo;
 
@@ -392,6 +399,12 @@ public class ImportView extends Div
         this.audioPlayer = new AudioPlayer();
         this.audioPlayer.setVisible(false);
 
+        this.progressBar = new ProgressBar();
+        this.progressBar.setVisible(false);
+
+        this.progressLabel = new Label("");
+        this.progressFolderLabel = new Label("");
+
         Component[] fields = new Component[] { this.directoryTextField,
                                                this.browseOriginButton,
                                                this.imageFileEndingsTextField,
@@ -412,6 +425,10 @@ public class ImportView extends Div
                                                new Hr(),
                                                UIUtils.heightFiller("30px"),
                                                this.importButton,
+                                               UIUtils.heightFiller("10px"),
+                                               this.progressLabel,
+                                               this.progressBar,
+                                               this.progressFolderLabel,
                                                UIUtils.heightFiller("15px"),
                                                new Hr(),
                                                UIUtils.heightFiller("15px"),
@@ -451,87 +468,218 @@ public class ImportView extends Div
     {
         this.lastCheckedImageRow = null;
         this.lastCheckedSoundRow = null;
+        this.importButton.setEnabled(false);
+        this.searchButton.setEnabled(false);
+        this.selectAllImportCheckboxButton.setEnabled(false);
+        this.deselectAllImportCheckboxButton.setEnabled(false);
+        this.browseOriginButton.setEnabled(false);
 
-        List<Tag> tags = new ArrayList<>();
+        UI.getCurrent().setPollInterval(500);
+        UI ui = UI.getCurrent();
 
-        for (String tag : this.applyTagsTextField.getValue().trim().split(","))
-        {
-            tag = tag.trim();
+        executorService.submit(() -> {
+            List<Tag> tags = new ArrayList<>();
 
-            if (!tag.isEmpty())
+            // get tags from tag field in case there are any
+            for (String tag : this.applyTagsTextField.getValue().trim().split(","))
             {
-                tags.add(this.tagService.obtainTag(tag));
+                tag = tag.trim();
+
+                if (!tag.isEmpty())
+                {
+                    tags.add(this.tagService.obtainTag(tag));
+                }
+            }
+
+            // get selected rows for images and sounds
+            List<AssetImportRow> selectedImages = this.imageFiles.stream()
+                                                                 .filter(AssetImportRow::isShouldImport)
+                                                                 .collect(Collectors.toList());
+
+            List<AssetImportRow> selectedSounds = this.soundFiles.stream()
+                                                                 .filter(AssetImportRow::isShouldImport)
+                                                                 .collect(Collectors.toList());
+
+            int totalNumFiles = selectedImages.size() + selectedSounds.size();
+            int processedFiles = 0;
+
+            ui.access(() -> {
+                this.progressBar.setIndeterminate(true);
+                this.progressBar.setVisible(true);
+                this.progressLabel.setText("Bundling files");
+            });
+
+            ui.access(() -> {
+                Notification.show("Importing " + selectedImages.size() + " images and " + selectedSounds.size() + " sounds");
+            });
+
+            Tag untaggedTag = this.tagService.obtainTag(AssetManagerConstants.UNTAGGED_TAG_NAME);
+
+            ImportFileBundler bundler = new ImportFileBundler();
+
+            Log.info("Starting to bundle " + totalNumFiles + " files");
+
+            for (AssetImportRow row : selectedImages)
+            {
+                bundler.addImage(row);
+            }
+
+            for (AssetImportRow row : selectedSounds)
+            {
+                bundler.addSound(row);
+            }
+
+            Log.info("Done bundling " + totalNumFiles + " files into " + bundler.getFolderNames().size() + " folders");
+
+            ui.access(() -> {
+                this.progressBar.setIndeterminate(false);
+                this.progressBar.setValue(0);
+                this.progressLabel.setText("Importing...    0 / " + totalNumFiles + " (0%)");
+            });
+
+            Log.info("Starting to import " + totalNumFiles + " files");
+
+            for (String folder : bundler.getFolderNames())
+            {
+                ui.access(() -> this.progressFolderLabel.setText(folder));
+
+                ImportFileBundler.Bundle bundle = bundler.getBundle(folder);
+                List<String> fileContent = FileMetadataUtils.getMetadataFileContent(folder);
+
+                for (AssetImportRow row : bundle.getImageAssets())
+                {
+                    ImageAsset asset = new ImageAsset();
+                    asset.setPath(row.getAbsolutePath());
+                    asset.setFileName(row.getFileName());
+                    asset.setTags(new ArrayList<>(getTagsForImportFile(tags, row, fileContent, untaggedTag)));
+
+                    this.imageService.save(asset, false);
+                    Log.info("Saved image asset " + asset.getPath());
+
+                    this.imageFiles.remove(row);
+
+                    processedFiles++;
+
+                    if (processedFiles % 100 == 0)
+                    {
+                        updateProgress(totalNumFiles, processedFiles, ui);
+                    }
+                }
+
+                for (AssetImportRow row : bundle.getSoundAssets())
+                {
+                    SoundAsset asset = new SoundAsset();
+                    asset.setPath(row.getAbsolutePath());
+                    asset.setFileName(row.getFileName());
+                    asset.setTags(new ArrayList<>(getTagsForImportFile(tags, row, fileContent, untaggedTag)));
+
+                    this.soundService.save(asset, false);
+                    Log.info("Saved sound asset " + asset.getPath());
+
+                    this.soundFiles.remove(row);
+
+                    processedFiles++;
+
+                    if (processedFiles % 100 == 0)
+                    {
+                        updateProgress(totalNumFiles, processedFiles, ui);
+                    }
+                }
+
+                Log.info("Saving metadata to file in " + folder);
+                FileMetadataUtils.overwriteMetadataFile(folder, fileContent);
+                Log.info("Done saving metadata to file in " + folder);
+
+                updateProgress(totalNumFiles, processedFiles, ui);
+            }
+
+            Log.info("Done importing " + totalNumFiles + " files");
+
+            for (int i = 0; i < this.imageFiles.size(); i++)
+            {
+                var row = this.imageFiles.get(i);
+                row.setIndex(i);
+            }
+
+            for (int i = 0; i < this.soundFiles.size(); i++)
+            {
+                var row = this.soundFiles.get(i);
+                row.setIndex(i);
+            }
+
+            ui.access(() -> {
+                this.progressBar.setVisible(false);
+                this.importButton.setEnabled(true);
+                this.searchButton.setEnabled(true);
+                this.selectAllImportCheckboxButton.setEnabled(true);
+                this.deselectAllImportCheckboxButton.setEnabled(true);
+                this.browseOriginButton.setEnabled(true);
+                this.soundGrid.setItems(this.soundFiles);
+                this.imageGrid.setItems(this.imageFiles);
+                this.soundCountLabel.setText(this.soundFiles.size() + " sounds found");
+                this.imageCountLabel.setText(this.imageFiles.size() + " images found");
+                this.progressFolderLabel.setText("");
+                this.progressLabel.setText("");
+            });
+
+            ui.setPollInterval(-1);
+        });
+    }
+
+    private void updateProgress(int totalNumFiles, int processedFiles, UI ui)
+    {
+        double completion = processedFiles / (double)totalNumFiles;
+        ui.access(() -> {
+            this.progressBar.setValue(completion);
+            this.progressLabel.setText("Importing...    " + processedFiles + " / " + totalNumFiles + " (" + (int)(completion * 100) + "%)");
+        });
+    }
+
+    private Set<Tag> getTagsForImportFile(List<Tag> startTags, AssetImportRow row, List<String> fileContent, Tag untaggedTag)
+    {
+        Set<Tag> tagSet = new HashSet<>(startTags);
+
+        boolean found = false;
+        int index = -1;
+
+        for (int i = 0; i < fileContent.size(); i++)
+        {
+            String line = fileContent.get(i);
+
+            if (FileMetadataUtils.lineMatch(row.getFileName(), line))
+            {
+                for (String tag : FileMetadataUtils.getTagsFromLine(line))
+                {
+                    tagSet.add(this.tagService.obtainTag(tag.trim()));
+                }
+
+                index = i;
+                found = true;
+                break;
             }
         }
 
-        if (tags.isEmpty())
+        if (tagSet.isEmpty())
         {
-            tags.add(this.tagService.obtainTag("UNTAGGED"));
+            tagSet.add(untaggedTag);
         }
 
-        List<AssetImportRow> selectedImages = this.imageFiles.stream()
-                                                             .filter(AssetImportRow::isShouldImport)
-                                                             .collect(Collectors.toList());
+        String tagString = tagSet.stream()
+                                 .map(Tag::getName)
+                                 .collect(Collectors.joining(","));
 
-        List<AssetImportRow> selectedSounds = this.soundFiles.stream()
-                                                             .filter(AssetImportRow::isShouldImport)
-                                                             .collect(Collectors.toList());
+        String lineContent = row.getFileName() + ": " + tagString;
 
-        Notification.show("Importing " + selectedImages.size() + " images and " + selectedSounds.size() + " sounds");
-
-        Log.info("Starting to import " + selectedImages.size() + " images");
-
-        for (AssetImportRow row : selectedImages)
+        if (found)
         {
-            ImageAsset asset = new ImageAsset();
-            asset.setTags(tags);
-
-            asset.setPath(row.getAbsolutePath());
-            asset.setFileName(row.getFileName());
-
-            this.imageRepo.save(asset);
-            Log.debug("Saved image asset " + asset.getPath());
-
-            this.imageFiles.remove(row);
+            fileContent.set(index, lineContent);
+        }
+        else
+        {
+            fileContent.add(lineContent);
         }
 
-        this.imageCountLabel.setText(this.imageFiles.size() + " images found");
-        Log.info("Done importing " + selectedImages.size() + " images");
-
-        this.imageGrid.setItems(this.imageFiles);
-
-        for (int i = 0; i < this.imageFiles.size(); i++)
-        {
-            var row = this.imageFiles.get(i);
-            row.setIndex(i);
-        }
-
-        Log.info("Starting to import " + selectedSounds.size() + " sounds");
-
-        for (AssetImportRow row : selectedSounds)
-        {
-            SoundAsset asset = new SoundAsset();
-            asset.setTags(tags);
-
-            asset.setPath(row.getAbsolutePath());
-            asset.setFileName(row.getFileName());
-
-            this.soundRepo.save(asset);
-            Log.debug("Saved sound asset " + asset.getPath());
-
-            this.soundFiles.remove(row);
-        }
-
-        this.soundCountLabel.setText(this.soundFiles.size() + " sounds found");
-        Log.info("Done importing " + selectedSounds.size() + " sounds");
-
-        this.soundGrid.setItems(this.soundFiles);
-
-        for (int i = 0; i < this.soundFiles.size(); i++)
-        {
-            var row = this.soundFiles.get(i);
-            row.setIndex(i);
-        }
+        return tagSet;
     }
 
     private void fillFileGrids(File root, List<TempImageAsset> tempImageFiles, List<TempSoundAsset> tempSoundFiles)

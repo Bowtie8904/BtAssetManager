@@ -1,4 +1,4 @@
-package bt.assetmanager.components;
+package bt.assetmanager.components.assetview;
 
 import bt.assetmanager.data.entity.Asset;
 import bt.assetmanager.util.UIUtils;
@@ -10,8 +10,10 @@ import com.vaadin.flow.server.StreamResource;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Lukas Hartwig
@@ -19,7 +21,7 @@ import java.util.List;
  */
 public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
 {
-    private Grid<AssetGridRow> grid;
+    private Grid<AssetGridDisplay.AssetGridRow> grid;
     private int elementsPerRow;
     private Image selectedImage;
 
@@ -42,7 +44,7 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
     @Override
     public void setItems(List<T> items)
     {
-        List<AssetGridRow> rows = new LinkedList<>();
+        List<AssetGridDisplay.AssetGridRow> rows = new LinkedList<>();
         int currentIndex = 0;
         AssetGridRow currentRow = new AssetGridRow();
 
@@ -80,9 +82,9 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
         this.selectedImage.getStyle().set("border-radius", "25px");
     }
 
-    protected Grid<AssetGridRow> createGrid()
+    protected Grid<AssetGridDisplay.AssetGridRow> createGrid()
     {
-        Grid<AssetGridRow> newGrid = new Grid<AssetGridRow>(AssetGridRow.class, false);
+        Grid<AssetGridDisplay.AssetGridRow> newGrid = new Grid<AssetGridDisplay.AssetGridRow>(AssetGridRow.class, false);
 
         for (int i = 0; i < this.elementsPerRow; i++)
         {
@@ -133,5 +135,28 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
         newGrid.setSelectionMode(Grid.SelectionMode.NONE);
 
         return newGrid;
+    }
+
+    class AssetGridRow
+    {
+        private Map<Integer, Asset> assets;
+        private int currentIndex;
+
+        public AssetGridRow()
+        {
+            this.assets = new HashMap<>();
+            this.currentIndex = 0;
+        }
+
+        public void add(Asset asset)
+        {
+            this.assets.put(this.currentIndex, asset);
+            this.currentIndex++;
+        }
+
+        public Asset get(int index)
+        {
+            return this.assets.get(index);
+        }
     }
 }

@@ -1,5 +1,6 @@
-package bt.assetmanager.components;
+package bt.assetmanager.components.assetview;
 
+import bt.assetmanager.components.SearchAndPreviewLayout;
 import bt.assetmanager.data.entity.Asset;
 import bt.assetmanager.data.entity.ImageAsset;
 import bt.assetmanager.data.service.AssetService;

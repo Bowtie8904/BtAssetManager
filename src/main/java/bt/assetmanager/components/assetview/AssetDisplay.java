@@ -1,4 +1,4 @@
-package bt.assetmanager.components;
+package bt.assetmanager.components.assetview;
 
 import bt.assetmanager.data.entity.Asset;
 import com.vaadin.flow.component.html.Div;

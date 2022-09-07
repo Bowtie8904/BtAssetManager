@@ -29,10 +29,10 @@ public class SoundAssetService extends BaseAssetService<SoundAsset>
     }
 
     @Override
-    public void save(SoundAsset entity)
+    public void save(SoundAsset entity, boolean saveTagsInMetadataFile)
     {
         this.soundAssetRepo.save(entity);
-        super.save(entity);
+        super.save(entity, saveTagsInMetadataFile);
     }
 
     @Override

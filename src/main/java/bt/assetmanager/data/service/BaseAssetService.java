@@ -13,15 +13,19 @@ import java.io.File;
 public abstract class BaseAssetService<T extends Asset> implements AssetService<T>
 {
     @Override
-    public void save(T entity)
+    public void save(T entity, boolean saveTagsInMetadataFile)
     {
-        saveMetadata(entity);
+        saveMetadata(entity, saveTagsInMetadataFile);
     }
 
-    public void saveMetadata(T entity)
+    public void saveMetadata(T entity, boolean saveTagsInMetadataFile)
     {
         saveTagsInOSFileMetadata(entity);
-        FileMetadataUtils.addTagsToMetadataFile(entity);
+
+        if (saveTagsInMetadataFile)
+        {
+            FileMetadataUtils.addTagsToMetadataFile(entity);
+        }
     }
 
     protected void saveTagsInOSFileMetadata(T entity)

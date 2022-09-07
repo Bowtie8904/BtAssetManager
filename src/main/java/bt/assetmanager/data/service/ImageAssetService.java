@@ -29,10 +29,10 @@ public class ImageAssetService extends BaseAssetService<ImageAsset>
     }
 
     @Override
-    public void save(ImageAsset entity)
+    public void save(ImageAsset entity, boolean saveTagsInMetadataFile)
     {
         this.imageAssetRepo.save(entity);
-        super.save(entity);
+        super.save(entity, saveTagsInMetadataFile);
     }
 
     @Override

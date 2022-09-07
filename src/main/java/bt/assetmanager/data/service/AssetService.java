@@ -14,7 +14,7 @@ public interface AssetService<T extends Asset>
 
     public List<T> findByFileName(String fileName);
 
-    public void save(T entity);
+    public void save(T entity, boolean saveTagsInMetadataFile);
 
     public void delete(T entity);
 

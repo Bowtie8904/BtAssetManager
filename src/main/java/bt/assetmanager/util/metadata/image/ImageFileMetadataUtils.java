@@ -136,7 +136,8 @@ public final class ImageFileMetadataUtils
             }
             catch (IOException | ImageReadException | ImageWriteException e)
             {
-                Log.error("Failed to save tags to Windows file metadata " + imageFile.getAbsolutePath(), e);
+                Log.error("Failed to save tags to Windows file metadata " + imageFile.getAbsolutePath());
+                Log.error(e.getMessage());
             }
         }
     }

@@ -116,7 +116,7 @@ public class FileImportWorker implements BackgroundWorker
                 asset.setTags(new ArrayList<>(getTagsForImportFile(tags, row, fileContent, untaggedTag)));
 
                 this.importView.getImageService().save(asset, false);
-                Log.info("Saved image asset " + asset.getPath());
+                Log.debug("Saved image asset " + asset.getPath());
 
                 this.importView.getImageFiles().remove(row);
 
@@ -136,7 +136,7 @@ public class FileImportWorker implements BackgroundWorker
                 asset.setTags(new ArrayList<>(getTagsForImportFile(tags, row, fileContent, untaggedTag)));
 
                 this.importView.getSoundService().save(asset, false);
-                Log.info("Saved sound asset " + asset.getPath());
+                Log.debug("Saved sound asset " + asset.getPath());
 
                 this.importView.getSoundFiles().remove(row);
 

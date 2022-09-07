@@ -54,6 +54,8 @@ public class FileSearchWorker implements BackgroundWorker
 
         this.importView.getImageFiles().clear();
         this.importView.getSoundFiles().clear();
+        ui.access(() -> this.importView.getImageGrid().setItems(this.importView.getImageFiles()));
+        ui.access(() -> this.importView.getSoundGrid().setItems(this.importView.getSoundFiles()));
 
         List<TempImageAsset> tempImageFiles = new LinkedList<>();
         List<TempSoundAsset> tempSoundFiles = new LinkedList<>();
@@ -80,6 +82,9 @@ public class FileSearchWorker implements BackgroundWorker
 
         fillFileGrids(ImportView.getSelectedOriginDirectory(), tempImageFiles, tempSoundFiles);
 
+        this.ui.access(() -> this.importView.getProgressFolderLabel().setText(""));
+        this.ui.access(() -> this.importView.getProgressLabel().setText("Filtering out already imported files..."));
+
         this.importView.getTempImageRepo().saveAll(tempImageFiles);
         this.importView.getTempSoundRepo().saveAll(tempSoundFiles);
 
@@ -104,6 +109,8 @@ public class FileSearchWorker implements BackgroundWorker
 
         this.importView.getTempImageRepo().deleteAll();
         this.importView.getTempSoundRepo().deleteAll();
+
+        this.ui.access(() -> this.importView.getProgressLabel().setText("Creating rows..."));
 
         for (int i = 0; i < this.importView.getImageFiles().size(); i++)
         {

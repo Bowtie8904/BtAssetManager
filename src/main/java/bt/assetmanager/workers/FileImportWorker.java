@@ -6,9 +6,9 @@ import bt.assetmanager.data.entity.SoundAsset;
 import bt.assetmanager.data.entity.Tag;
 import bt.assetmanager.data.entity.UserOption;
 import bt.assetmanager.data.service.UserOptionService;
+import bt.assetmanager.obj.FileBundler;
 import bt.assetmanager.util.metadata.FileMetadataUtils;
 import bt.assetmanager.views.import_.AssetImportRow;
-import bt.assetmanager.views.import_.ImportFileBundler;
 import bt.assetmanager.views.import_.ImportView;
 import bt.log.Log;
 import com.vaadin.flow.component.UI;
@@ -72,14 +72,14 @@ public class FileImportWorker implements BackgroundWorker
         ui.access(() -> {
             this.importView.getProgressBar().setIndeterminate(true);
             this.importView.getProgressBar().setVisible(true);
-            this.importView.getProgressLabel().setText("Bundling files");
+            this.importView.getProgressLabel().setText("Bundling files...");
         });
 
         ui.access(() -> Notification.show("Importing " + selectedImages.size() + " images and " + selectedSounds.size() + " sounds"));
 
         Tag untaggedTag = this.importView.getTagService().obtainTag(AssetManagerConstants.UNTAGGED_TAG_NAME);
 
-        ImportFileBundler bundler = new ImportFileBundler();
+        FileBundler<AssetImportRow> bundler = new FileBundler<>();
 
         Log.info("Starting to bundle " + totalNumFiles + " files");
 
@@ -110,7 +110,7 @@ public class FileImportWorker implements BackgroundWorker
         {
             ui.access(() -> this.importView.getProgressFolderLabel().setText(folder));
 
-            ImportFileBundler.Bundle bundle = bundler.getBundle(folder);
+            var bundle = bundler.getBundle(folder);
             List<String> fileContent = null;
 
             if (readFromMetadataFile)
@@ -121,7 +121,7 @@ public class FileImportWorker implements BackgroundWorker
             for (AssetImportRow row : bundle.getImageAssets())
             {
                 ImageAsset asset = new ImageAsset();
-                asset.setPath(row.getAbsolutePath());
+                asset.setPath(row.getPath());
                 asset.setFileName(row.getFileName());
 
                 if (readFromMetadataFile)
@@ -149,7 +149,7 @@ public class FileImportWorker implements BackgroundWorker
             for (AssetImportRow row : bundle.getSoundAssets())
             {
                 SoundAsset asset = new SoundAsset();
-                asset.setPath(row.getAbsolutePath());
+                asset.setPath(row.getPath());
                 asset.setFileName(row.getFileName());
 
                 if (readFromMetadataFile)

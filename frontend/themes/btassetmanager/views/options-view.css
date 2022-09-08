@@ -11,10 +11,13 @@
 
 .options-view vaadin-checkbox {
   padding-top: 50px;
-  padding-left: 100px;
 }
 
 .options-view vaadin-horizontal-layout {
+  padding-top: 50px;
+}
+
+.options-view vaadin-vertical-layout {
   padding-top: 50px;
   padding-left: 100px;
 }

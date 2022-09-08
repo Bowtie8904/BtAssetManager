@@ -3,16 +3,28 @@ package bt.assetmanager.views.options;
 import bt.assetmanager.components.options.UserOptionCheckbox;
 import bt.assetmanager.components.options.UserOptionNumberField;
 import bt.assetmanager.data.entity.UserOption;
+import bt.assetmanager.data.service.ImageAssetService;
+import bt.assetmanager.data.service.SoundAssetService;
 import bt.assetmanager.data.service.UserOptionService;
+import bt.assetmanager.util.UIUtils;
 import bt.assetmanager.views.MainLayout;
+import bt.assetmanager.workers.ExportTagsToMetadataWorker;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.Uses;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author Lukas Hartwig
@@ -23,12 +35,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Uses(Icon.class)
 public class OptionsView extends Div
 {
+    private static ExecutorService executorService = Executors.newCachedThreadPool();
     private UserOptionService optionsService;
+    private ImageAssetService imageService;
+    private SoundAssetService soundService;
+    private ProgressBar progressBar;
+    private Label progressLabel;
+    private Button exportTagsButton;
 
     @Autowired
-    public OptionsView(UserOptionService optionsService)
+    public OptionsView(UserOptionService optionsService, ImageAssetService imageService, SoundAssetService soundService)
     {
         this.optionsService = optionsService;
+        this.imageService = imageService;
+        this.soundService = soundService;
         addClassNames("options-view");
 
         SplitLayout layout = new SplitLayout();
@@ -86,5 +106,49 @@ public class OptionsView extends Div
                                            UserOption.REMOVE_ASSETS_FROM_TOOL_IF_THEY_CANT_BE_FOUND,
                                            "Remove assets from this tool if their files can't be found anymore",
                                            "If enabled this will remove assets from the tool if their files don't exist anymore, for example if you moved them."));
+
+        this.exportTagsButton = new Button("Export tags to metadata");
+        this.exportTagsButton.getElement().setProperty("title", "Exports all existing tags to the metadata. Make sure to enable the appropriate metadata options above.");
+        this.exportTagsButton.addClickListener(e -> writeTagsToMetadata());
+
+        wrapper.add(UIUtils.heightFiller("150px"), this.exportTagsButton);
+
+        this.progressBar = new ProgressBar();
+        this.progressBar.setVisible(false);
+        this.progressBar.setWidth("300px");
+
+        this.progressLabel = new Label("");
+
+        wrapper.add(this.progressLabel, this.progressBar);
+    }
+
+    private void writeTagsToMetadata()
+    {
+        this.exportTagsButton.setEnabled(false);
+        UI.getCurrent().setPollInterval(500);
+        UI ui = UI.getCurrent();
+
+        executorService.submit(() -> {
+            var worker = new ExportTagsToMetadataWorker(this, this.imageService, this.soundService, this.optionsService);
+
+            worker.onFinish(() -> {
+                this.exportTagsButton.setEnabled(true);
+                this.progressBar.setVisible(false);
+                this.progressLabel.setText("");
+                Notification.show("Finished exporting tags");
+            });
+
+            worker.work(ui);
+        });
+    }
+
+    public ProgressBar getProgressBar()
+    {
+        return progressBar;
+    }
+
+    public Label getProgressLabel()
+    {
+        return progressLabel;
     }
 }

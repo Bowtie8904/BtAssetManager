@@ -90,7 +90,7 @@ public class FileSearchWorker implements BackgroundWorker
         this.importView.setImageFiles(tempImageFiles.parallelStream().map(temp -> {
             var row = new AssetImportRow();
             row.setFileName(temp.getFileName());
-            row.setAbsolutePath(temp.getPath());
+            row.setPath(temp.getPath());
             row.setRelativePath(temp.getPath().substring(this.importView.getSelectedOriginDirectory().getAbsolutePath().length()));
             return row;
         }).collect(Collectors.toList()));
@@ -98,7 +98,7 @@ public class FileSearchWorker implements BackgroundWorker
         this.importView.setSoundFiles(tempSoundFiles.parallelStream().map(temp -> {
             var row = new AssetImportRow();
             row.setFileName(temp.getFileName());
-            row.setAbsolutePath(temp.getPath());
+            row.setPath(temp.getPath());
             row.setRelativePath(temp.getPath().substring(this.importView.getSelectedOriginDirectory().getAbsolutePath().length()));
             return row;
         }).collect(Collectors.toList()));

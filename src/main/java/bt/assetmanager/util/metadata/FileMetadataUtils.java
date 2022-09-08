@@ -30,6 +30,13 @@ public final class FileMetadataUtils
     {
     }
 
+    public static String tagsToString(List<Tag> tags)
+    {
+        return tags.stream()
+                   .map(Tag::getName)
+                   .collect(Collectors.joining(","));
+    }
+
     public static void addTagsToMetadataFile(Asset asset)
     {
         try
@@ -49,9 +56,7 @@ public final class FileMetadataUtils
                 fileContent = new ArrayList<>(Files.readAllLines(metadataFile.toPath(), StandardCharsets.UTF_8));
             }
 
-            String tagString = asset.getTags().stream()
-                                    .map(Tag::getName)
-                                    .collect(Collectors.joining(","));
+            String tagString = tagsToString(asset.getTags());
 
             String lineContent = asset.getFileName() + ": " + tagString;
 

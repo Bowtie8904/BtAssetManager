@@ -4,6 +4,7 @@ import bt.assetmanager.components.AssetSearchPanel;
 import bt.assetmanager.data.entity.Asset;
 import com.vaadin.flow.component.UI;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
@@ -11,7 +12,7 @@ import java.util.List;
  * @author Lukas Hartwig
  * @since 08.09.2022
  */
-public class AssetSearchWorker<T extends Asset> implements BackgroundWorker
+public class AssetSearchWorker<T extends Asset & Serializable> implements BackgroundWorker
 {
     private AssetSearchPanel<T> searchPanel;
     private Runnable onFinish;

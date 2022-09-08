@@ -464,7 +464,7 @@ public class ImportView extends Div
                                              StreamResource imageResource = new StreamResource(row.getFileName() + "", () -> {
                                                  try
                                                  {
-                                                     return new FileInputStream(row.getAbsolutePath());
+                                                     return new FileInputStream(row.getPath());
                                                  }
                                                  catch (final FileNotFoundException e)
                                                  {
@@ -501,7 +501,7 @@ public class ImportView extends Div
                                                  StreamResource soundResource = new StreamResource(row.getFileName() + "", () -> {
                                                      try
                                                      {
-                                                         return new FileInputStream(row.getAbsolutePath());
+                                                         return new FileInputStream(row.getPath());
                                                      }
                                                      catch (final FileNotFoundException ex)
                                                      {

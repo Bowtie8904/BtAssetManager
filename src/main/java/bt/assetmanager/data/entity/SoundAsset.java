@@ -1,6 +1,7 @@
 package bt.assetmanager.data.entity;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 
@@ -9,7 +10,7 @@ import java.util.Objects;
  * @since 28.08.2022
  */
 @Entity
-public class SoundAsset implements Asset
+public class SoundAsset implements Asset, Serializable
 {
     @Id
     @GeneratedValue

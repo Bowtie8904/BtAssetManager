@@ -58,6 +58,7 @@ public class AssetSearchPanel<T extends Asset & Serializable> extends Div
     private VirtualList<String> tagList;
     private SerializableConsumer<List<T>> onSearchConsumer;
     private SerializableConsumer<Boolean> onViewChange;
+    private SerializableConsumer<T> onDelete;
     private Button switchLayoutButton;
     private boolean displayLines;
     private Button openFolderButton;
@@ -119,6 +120,11 @@ public class AssetSearchPanel<T extends Asset & Serializable> extends Div
     public void onViewChange(SerializableConsumer<Boolean> consumer)
     {
         this.onViewChange = consumer;
+    }
+
+    public void onDelete(SerializableConsumer<T> consumer)
+    {
+        this.onDelete = consumer;
     }
 
     private void createUI()
@@ -217,7 +223,14 @@ public class AssetSearchPanel<T extends Asset & Serializable> extends Div
             {
                 this.assetService.delete(this.currentlySelectedElement);
 
+                if (this.onDelete != null)
+                {
+                    this.onDelete.accept(this.currentlySelectedElement);
+                }
+
                 Notification.show("Removed file " + this.currentlySelectedElement.getFileName());
+
+                this.currentlySelectedElement = null;
             }
         });
 

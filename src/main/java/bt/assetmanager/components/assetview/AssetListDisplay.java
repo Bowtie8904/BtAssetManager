@@ -25,6 +25,7 @@ import java.util.List;
 public class AssetListDisplay<T extends Asset> extends AssetDisplay<T>
 {
     private Grid<T> grid;
+    private List<T> items;
     private SerializableConsumer<T> onElementPlay;
 
     public AssetListDisplay(Class<T> clazz)
@@ -50,8 +51,16 @@ public class AssetListDisplay<T extends Asset> extends AssetDisplay<T>
     @Override
     public void setItems(List<T> items)
     {
-        this.grid.setItems(items);
+        this.items = items;
+        this.grid.setItems(this.items);
         this.grid.scrollToStart();
+    }
+
+    @Override
+    public void removeItem(T item)
+    {
+        this.items.remove(item);
+        this.grid.setItems(this.items);
     }
 
     protected Grid<T> createGrid()

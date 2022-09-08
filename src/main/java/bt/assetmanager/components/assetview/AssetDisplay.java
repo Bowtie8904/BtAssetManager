@@ -30,4 +30,6 @@ public abstract class AssetDisplay<T extends Asset> extends Div
     }
 
     public abstract void setItems(List<T> items);
+
+    public abstract void removeItem(T item);
 }

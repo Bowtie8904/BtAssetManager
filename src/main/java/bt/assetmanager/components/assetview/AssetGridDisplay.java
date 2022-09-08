@@ -22,6 +22,7 @@ import java.util.List;
 public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
 {
     private Grid<AssetGridRow> grid;
+    private List<T> items;
     private int elementsPerRow;
     private Image selectedImage;
     private boolean keepImageAspectRatio;
@@ -43,8 +44,7 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
         add(this.grid);
     }
 
-    @Override
-    public void setItems(List<T> items)
+    private void buildRows(List<T> items)
     {
         List<AssetGridRow> rows = new LinkedList<>();
         int currentIndex = 0;
@@ -69,7 +69,21 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
         }
 
         this.grid.setItems(rows);
+    }
+
+    @Override
+    public void setItems(List<T> items)
+    {
+        this.items = items;
+        buildRows(items);
         this.grid.scrollToStart();
+    }
+
+    @Override
+    public void removeItem(T item)
+    {
+        this.items.remove(items);
+        buildRows(this.items);
     }
 
     public void selectImage(Image image)

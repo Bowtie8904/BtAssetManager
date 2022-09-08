@@ -2,6 +2,7 @@ package bt.assetmanager.data.entity;
 
 import javax.persistence.*;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Lukas Hartwig
@@ -62,5 +63,22 @@ public class SoundAsset implements Asset
     public void setTags(List<Tag> tags)
     {
         this.tags = tags;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        SoundAsset that = (SoundAsset)o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(id);
     }
 }

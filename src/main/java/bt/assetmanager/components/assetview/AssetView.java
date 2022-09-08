@@ -13,6 +13,7 @@ import com.vaadin.flow.component.splitlayout.SplitLayout;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Lukas Hartwig
@@ -63,6 +64,13 @@ public class AssetView<T extends Asset> extends SplitLayout
             this.grid.setItems(this.items);
         });
 
+        this.assetSearchPanel.onSearch(this::setItems);
+
+        this.assetSearchPanel.onDelete(item -> {
+            getItems().remove(item);
+            this.grid.removeItem(item);
+        });
+
         if (this.optionsService.getBooleanValue(UserOption.DISPLAY_ALL_ASSETS_ON_PAGE_OPEN))
         {
             this.assetSearchPanel.onSearchButton();
@@ -74,7 +82,6 @@ public class AssetView<T extends Asset> extends SplitLayout
         this.grid = new AssetGridDisplay<>(this.clazz,
                                            this.optionsService.getIntValue(UserOption.IMAGE_GRID_IMAGES_PER_ROW),
                                            this.optionsService.getBooleanValue(UserOption.IMAGE_GRID_KEEP_ASPECT_RATIO));
-        this.assetSearchPanel.onSearch(this::setItems);
         this.grid.onElementSelection(element -> this.assetSearchPanel.setSelectedElement(element));
         addToPrimary(this.grid);
     }
@@ -82,7 +89,6 @@ public class AssetView<T extends Asset> extends SplitLayout
     protected void createListView()
     {
         this.grid = new AssetListDisplay<>(this.clazz);
-        this.assetSearchPanel.onSearch(this::setItems);
         this.grid.onElementSelection(element -> this.assetSearchPanel.setSelectedElement(element));
 
         ((AssetListDisplay<T>)this.grid).onElementPlay(element -> {
@@ -90,6 +96,11 @@ public class AssetView<T extends Asset> extends SplitLayout
             this.assetSearchPanel.playSound();
         });
         addToPrimary(this.grid);
+    }
+
+    private List<T> getItems()
+    {
+        return this.items;
     }
 
     private void setItems(List<T> items)
@@ -110,10 +121,10 @@ public class AssetView<T extends Asset> extends SplitLayout
                                  Log.info("Deleted asset " + asset.getPath() + " because the file no longer exists");
                                  return false;
                              }
-                         }).toList();
+                         }).collect(Collectors.toList());
         }
 
         this.items = items;
-        this.grid.setItems(items);
+        this.grid.setItems(this.items);
     }
 }

@@ -1,4 +1,4 @@
-package bt.assetmanager.components;
+package bt.assetmanager.components.assetview;
 
 import bt.assetmanager.data.entity.Asset;
 
@@ -7,7 +7,7 @@ import java.util.Map;
 
 /**
  * @author Lukas Hartwig
- * @since 02.09.2022
+ * @since 08.09.2022
  */
 public class AssetGridRow
 {

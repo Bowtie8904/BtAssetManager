@@ -27,15 +27,8 @@ public class SystemTrayOptions extends DefaultSwingSystemTrayFrame
         settings.addLabel("Asset manager");
         settings.addSeparator();
 
-        settings.addOption("Open in browser", e -> {
-            openBrowser();
-        });
-
-        settings.addOption("Shutdown", e ->
-        {
-            System.exit(0);
-        });
-
+        settings.addOption("Open in browser", e -> openBrowser());
+        settings.addOption("Shutdown", e -> System.exit(0));
         sendToSystemTray();
     }
 

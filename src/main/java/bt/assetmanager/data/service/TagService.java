@@ -1,18 +1,19 @@
 package bt.assetmanager.data.service;
 
 import bt.assetmanager.data.entity.Tag;
+import bt.assetmanager.data.repository.TagRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.Serializable;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author Lukas Hartwig
  * @since 29.08.2022
  */
 @Service
-public class TagService
+public class TagService implements Serializable
 {
     @Autowired
     private TagRepository tagRepo;
@@ -38,6 +39,6 @@ public class TagService
                            .stream()
                            .map(Tag::getName)
                            .sorted()
-                           .collect(Collectors.toList());
+                           .toList();
     }
 }

@@ -1,9 +1,11 @@
-package bt.assetmanager.components;
+package bt.assetmanager.components.assetview;
 
 import bt.assetmanager.data.entity.Asset;
 import bt.assetmanager.util.UIUtils;
 import bt.log.Log;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.server.StreamResource;
@@ -20,14 +22,17 @@ import java.util.List;
 public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
 {
     private Grid<AssetGridRow> grid;
+    private List<T> items;
     private int elementsPerRow;
     private Image selectedImage;
+    private boolean keepImageAspectRatio;
 
-    public AssetGridDisplay(Class<T> clazz, int elementsPerRow)
+    public AssetGridDisplay(Class<T> clazz, int elementsPerRow, boolean keepImageAspectRatio)
     {
         super(clazz);
         setClassName("grid-wrapper");
         this.elementsPerRow = elementsPerRow;
+        this.keepImageAspectRatio = keepImageAspectRatio;
         setup();
     }
 
@@ -39,8 +44,7 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
         add(this.grid);
     }
 
-    @Override
-    public void setItems(List<T> items)
+    private void buildRows(List<T> items)
     {
         List<AssetGridRow> rows = new LinkedList<>();
         int currentIndex = 0;
@@ -65,24 +69,40 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
         }
 
         this.grid.setItems(rows);
+    }
+
+    @Override
+    public void setItems(List<T> items)
+    {
+        this.items = items;
+        buildRows(items);
         this.grid.scrollToStart();
+    }
+
+    @Override
+    public void removeItem(T item)
+    {
+        this.items.remove(items);
+        buildRows(this.items);
     }
 
     public void selectImage(Image image)
     {
         if (this.selectedImage != null)
         {
-            this.selectedImage.getStyle().set("border", "6px solid transparent");
+            setImageBorder(this.selectedImage, "6px solid transparent");
         }
 
         this.selectedImage = image;
-        this.selectedImage.getStyle().set("border", "6px solid DarkOrange");
-        this.selectedImage.getStyle().set("border-radius", "25px");
+        setImageBorder(this.selectedImage, "6px solid DarkOrange");
+        this.selectedImage.getStyle().set("border-radius", "15px");
     }
 
     protected Grid<AssetGridRow> createGrid()
     {
-        Grid<AssetGridRow> newGrid = new Grid<AssetGridRow>(AssetGridRow.class, false);
+        Grid<AssetGridRow> newGrid = new Grid<>(AssetGridRow.class, false);
+
+        String imageSize = (100.0 / this.elementsPerRow) + "%";
 
         for (int i = 0; i < this.elementsPerRow; i++)
         {
@@ -106,9 +126,9 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
                                               });
 
                                               Image image = new Image(imageResource, "Couldn't load image");
-                                              image.setHeight("80px");
-                                              image.setWidth("80px");
-                                              image.getStyle().set("border", "6px solid transparent");
+
+                                              setImageBorder(image, "6px solid transparent");
+                                              image.getStyle().set("border-radius", "15px");
 
                                               image.addClickListener(e -> {
                                                   if (this.onElementSelection != null)
@@ -119,7 +139,24 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
                                                   selectImage(image);
                                               });
 
-                                              return image;
+                                              if (this.keepImageAspectRatio)
+                                              {
+                                                  image.setWidth("100%");
+                                                  image.setHeight("100%");
+
+                                                  return image;
+                                              }
+                                              else
+                                              {
+                                                  Div wrapper = new Div();
+                                                  wrapper.setWidth("100%");
+
+                                                  wrapper.addClassName("image-container");
+                                                  image.addClassName("grid-image-ignore-ratio");
+                                                  wrapper.add(image);
+
+                                                  return wrapper;
+                                              }
                                           }
                                           else
                                           {
@@ -127,11 +164,17 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
                                           }
                                       }
                               )
-            ).setHeader("").setKey("image" + i);
+            ).setHeader("").setKey("image" + i).setWidth(imageSize);
         }
 
         newGrid.setSelectionMode(Grid.SelectionMode.NONE);
+        newGrid.addThemeVariants(GridVariant.LUMO_NO_ROW_BORDERS);
 
         return newGrid;
+    }
+
+    private void setImageBorder(Image image, String borderValue)
+    {
+        image.getStyle().set("border", borderValue);
     }
 }

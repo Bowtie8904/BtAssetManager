@@ -56,11 +56,11 @@ public class FileImportWorker implements BackgroundWorker
         // get selected rows for images and sounds
         List<AssetImportRow> selectedImages = this.importView.getImageFiles().stream()
                                                              .filter(AssetImportRow::isShouldImport)
-                                                             .collect(Collectors.toList());
+                                                             .toList();
 
         List<AssetImportRow> selectedSounds = this.importView.getSoundFiles().stream()
                                                              .filter(AssetImportRow::isShouldImport)
-                                                             .collect(Collectors.toList());
+                                                             .toList();
 
         int totalNumFiles = selectedImages.size() + selectedSounds.size();
         int processedFiles = 0;
@@ -71,9 +71,7 @@ public class FileImportWorker implements BackgroundWorker
             this.importView.getProgressLabel().setText("Bundling files");
         });
 
-        ui.access(() -> {
-            Notification.show("Importing " + selectedImages.size() + " images and " + selectedSounds.size() + " sounds");
-        });
+        ui.access(() -> Notification.show("Importing " + selectedImages.size() + " images and " + selectedSounds.size() + " sounds"));
 
         Tag untaggedTag = this.importView.getTagService().obtainTag(AssetManagerConstants.UNTAGGED_TAG_NAME);
 

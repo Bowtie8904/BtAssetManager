@@ -19,13 +19,13 @@ public class AssetView<T extends Asset> extends SplitLayout
     private AssetDisplay<T> grid;
     private AssetSearchPanel<T> assetSearchPanel;
     private Class<T> clazz;
-    private List<T> items = new ArrayList<>();
+    private transient List<T> items = new ArrayList<>();
 
     public AssetView(Class<T> clazz, AssetService<T> assetService, TagService tagService)
     {
         this.clazz = clazz;
 
-        this.assetSearchPanel = new AssetSearchPanel(clazz, assetService, tagService);
+        this.assetSearchPanel = new AssetSearchPanel<>(clazz, assetService, tagService);
         addToSecondary(this.assetSearchPanel);
 
         if (this.clazz.equals(ImageAsset.class))
@@ -40,7 +40,7 @@ public class AssetView<T extends Asset> extends SplitLayout
 
     protected void createGridView()
     {
-        this.grid = new AssetGridDisplay<T>(this.clazz, 10);
+        this.grid = new AssetGridDisplay<>(this.clazz, 10);
         this.assetSearchPanel.onSearch(list -> {
             this.items = list;
             this.grid.setItems(list);
@@ -49,7 +49,7 @@ public class AssetView<T extends Asset> extends SplitLayout
         addToPrimary(this.grid);
 
         this.assetSearchPanel.onViewChange(displayList -> {
-            if (displayList)
+            if (Boolean.TRUE.equals(displayList))
             {
                 createListView();
             }
@@ -64,7 +64,7 @@ public class AssetView<T extends Asset> extends SplitLayout
 
     protected void createListView()
     {
-        this.grid = new AssetListDisplay<T>(this.clazz);
+        this.grid = new AssetListDisplay<>(this.clazz);
         this.assetSearchPanel.onSearch(list -> {
             this.items = list;
             this.grid.setItems(list);

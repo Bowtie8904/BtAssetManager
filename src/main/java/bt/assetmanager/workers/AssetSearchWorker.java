@@ -1,22 +1,22 @@
 package bt.assetmanager.workers;
 
 import bt.assetmanager.components.AssetSearchPanel;
+import bt.assetmanager.data.entity.Asset;
 import com.vaadin.flow.component.UI;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author Lukas Hartwig
  * @since 08.09.2022
  */
-public class AssetSearchWorker<T> implements BackgroundWorker
+public class AssetSearchWorker<T extends Asset> implements BackgroundWorker
 {
-    private AssetSearchPanel searchPanel;
+    private AssetSearchPanel<T> searchPanel;
     private Runnable onFinish;
 
-    public AssetSearchWorker(AssetSearchPanel searchPanel)
+    public AssetSearchWorker(AssetSearchPanel<T> searchPanel)
     {
         this.searchPanel = searchPanel;
     }
@@ -30,7 +30,7 @@ public class AssetSearchWorker<T> implements BackgroundWorker
             this.searchPanel.getProgressLabel().setText("Searching...");
         });
 
-        List<T> resultSet = List.of();
+        List<T> resultSet = null;
 
         if (this.searchPanel.getSearchTextField().getValue().trim().isEmpty())
         {
@@ -38,14 +38,14 @@ public class AssetSearchWorker<T> implements BackgroundWorker
         }
         else
         {
-            if (this.searchPanel.getFileNameFilterCheckbox().getValue())
+            if (Boolean.TRUE.equals(this.searchPanel.getFileNameFilterCheckbox().getValue()))
             {
                 resultSet = this.searchPanel.getAssetService().findByFileName(this.searchPanel.getSearchTextField().getValue().trim());
             }
             else
             {
                 String[] singleTags = this.searchPanel.getSearchTextField().getValue().split(",");
-                List<String> singleTagList = Arrays.asList(singleTags).stream().map(String::trim).map(String::toUpperCase).collect(Collectors.toList());
+                List<String> singleTagList = Arrays.asList(singleTags).stream().map(String::trim).map(String::toUpperCase).toList();
 
                 resultSet = this.searchPanel.getAssetService().findByTags(singleTagList);
             }

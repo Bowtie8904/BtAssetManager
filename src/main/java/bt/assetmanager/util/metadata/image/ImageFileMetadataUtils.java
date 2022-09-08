@@ -39,6 +39,10 @@ public final class ImageFileMetadataUtils
         supportedFileFormats.add("jpeg");
     }
 
+    private ImageFileMetadataUtils()
+    {
+    }
+
     public static boolean isValidImageFormat(File imageFile)
     {
         String fileFormat = "invalid";
@@ -65,10 +69,8 @@ public final class ImageFileMetadataUtils
             {
                 ImageMetadata metadata = Imaging.getMetadata(imageFile);
 
-                if (metadata instanceof JpegImageMetadata)
+                if (metadata instanceof JpegImageMetadata jpegMetadata)
                 {
-                    JpegImageMetadata jpegMetadata = (JpegImageMetadata)metadata;
-
                     TiffField field = jpegMetadata.findEXIFValueWithExactMatch(MicrosoftTagConstants.EXIF_TAG_XPKEYWORDS);
 
                     for (String tag : field.getValue().toString().split(";"))

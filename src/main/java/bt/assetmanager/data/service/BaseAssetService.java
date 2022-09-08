@@ -5,12 +5,13 @@ import bt.assetmanager.util.metadata.FileMetadataUtils;
 import bt.assetmanager.util.metadata.image.ImageFileMetadataUtils;
 
 import java.io.File;
+import java.io.Serializable;
 
 /**
  * @author Lukas Hartwig
  * @since 04.09.2022
  */
-public abstract class BaseAssetService<T extends Asset> implements AssetService<T>
+public abstract class BaseAssetService<T extends Asset & Serializable> implements AssetService<T>
 {
     @Override
     public void save(T entity, boolean saveTagsInMetadataFile)

@@ -26,6 +26,10 @@ public final class FileMetadataUtils
 {
     private static final String METADATA_FILE_NAME = ".asset_tags.meta";
 
+    private FileMetadataUtils()
+    {
+    }
+
     public static void addTagsToMetadataFile(Asset asset)
     {
         try

@@ -3,6 +3,8 @@ package bt.assetmanager.views.import_;
 import bt.assetmanager.components.AudioPlayer;
 import bt.assetmanager.components.ScrollTreeGrid;
 import bt.assetmanager.components.TagSearchTextField;
+import bt.assetmanager.data.entity.ImageFileEnding;
+import bt.assetmanager.data.entity.SoundFileEnding;
 import bt.assetmanager.data.repository.ImageFileEndingRepository;
 import bt.assetmanager.data.repository.SoundFileEndingRepository;
 import bt.assetmanager.data.repository.TempImageAssetRepository;
@@ -47,11 +49,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 @PageTitle("Import - Asset manager")
 @Route(value = "import", layout = MainLayout.class)
@@ -108,8 +110,8 @@ public class ImportView extends Div
         this.tempImageRepo = tempImageRepo;
         this.tempSoundRepo = tempSoundRepo;
 
-        this.soundFileEndings = this.soundFileEndingRepo.findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList());
-        this.imageFileEndings = this.imageFileEndingRepo.findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList());
+        this.soundFileEndings = this.soundFileEndingRepo.findAll().stream().map(SoundFileEnding::getEnding).toList();
+        this.imageFileEndings = this.imageFileEndingRepo.findAll().stream().map(ImageFileEnding::getEnding).toList();
 
         this.imageFiles = new ArrayList<>();
         this.soundFiles = new ArrayList<>();
@@ -147,13 +149,7 @@ public class ImportView extends Div
         List<File> rootFiles = new ArrayList<>();
 
         File[] drives = File.listRoots();
-        if (drives != null && drives.length > 0)
-        {
-            for (File aDrive : drives)
-            {
-                rootFiles.add(aDrive);
-            }
-        }
+        Collections.addAll(rootFiles, drives);
 
         File rootBase = rootFiles.get(0);
 
@@ -203,9 +199,7 @@ public class ImportView extends Div
         });
 
         Button closeButton = new Button("Close");
-        closeButton.addClickListener(e -> {
-            dialog.close();
-        });
+        closeButton.addClickListener(e -> dialog.close());
 
         tree.setWidth("750px");
         tree.setHeight("500px");
@@ -272,9 +266,7 @@ public class ImportView extends Div
         this.applyTagsTextField.setLabel("Apply these tags on import (comma separated)");
 
         this.searchButton = new Button("Search");
-        this.searchButton.addClickListener(e -> {
-            searchFiles();
-        });
+        this.searchButton.addClickListener(e -> searchFiles());
 
         this.selectAllImportCheckboxButton = new Button("Import all");
         this.selectAllImportCheckboxButton.setWidth("160px");
@@ -429,12 +421,7 @@ public class ImportView extends Div
 
     private void createImageGrid(SplitLayout splitLayout)
     {
-        this.imageGrid.addColumn(new ComponentRenderer<>(
-                                         row -> {
-                                             return row.getImportCheckbox();
-                                         }
-                                 )
-        ).setHeader("Import").setKey("shouldImport");
+        this.imageGrid.addColumn(new ComponentRenderer<>(AssetImportRow::getImportCheckbox)).setHeader("Import").setKey("shouldImport");
 
         this.imageGrid.addColumn(new ComponentRenderer<>(
                                          row -> {
@@ -469,12 +456,7 @@ public class ImportView extends Div
 
     private void createSoundGrid(SplitLayout splitLayout)
     {
-        this.soundGrid.addColumn(new ComponentRenderer<>(
-                                         row -> {
-                                             return row.getImportCheckbox();
-                                         }
-                                 )
-        ).setHeader("Import").setKey("shouldImport");
+        this.soundGrid.addColumn(new ComponentRenderer<>(AssetImportRow::getImportCheckbox)).setHeader("Import").setKey("shouldImport");
 
         this.soundGrid.addColumn(new ComponentRenderer<>(
                                          row -> {

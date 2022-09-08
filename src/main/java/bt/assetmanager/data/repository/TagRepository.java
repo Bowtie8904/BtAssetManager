@@ -4,6 +4,7 @@ import bt.assetmanager.data.entity.Tag;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -11,7 +12,7 @@ import java.util.List;
  * @since 29.08.2022
  */
 @Repository
-public interface TagRepository extends JpaRepository<Tag, Long>
+public interface TagRepository extends JpaRepository<Tag, Long>, Serializable
 {
     public Tag findByNameIgnoreCase(String name);
 

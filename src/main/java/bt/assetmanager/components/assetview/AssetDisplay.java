@@ -2,9 +2,9 @@ package bt.assetmanager.components.assetview;
 
 import bt.assetmanager.data.entity.Asset;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.function.SerializableConsumer;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * @author Lukas Hartwig
@@ -12,10 +12,10 @@ import java.util.function.Consumer;
  */
 public abstract class AssetDisplay<T extends Asset> extends Div
 {
-    protected Consumer<T> onElementSelection;
+    protected SerializableConsumer<T> onElementSelection;
     protected Class<T> clazz;
 
-    public AssetDisplay(Class<T> clazz)
+    protected AssetDisplay(Class<T> clazz)
     {
         this.clazz = clazz;
     }
@@ -24,7 +24,7 @@ public abstract class AssetDisplay<T extends Asset> extends Div
     {
     }
 
-    public void onElementSelection(Consumer<T> consumer)
+    public void onElementSelection(SerializableConsumer<T> consumer)
     {
         this.onElementSelection = consumer;
     }

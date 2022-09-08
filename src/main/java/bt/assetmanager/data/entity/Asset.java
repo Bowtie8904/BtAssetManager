@@ -1,12 +1,13 @@
 package bt.assetmanager.data.entity;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * @author Lukas Hartwig
  * @since 31.08.2022
  */
-public interface Asset
+public interface Asset extends Serializable
 {
     public List<Tag> getTags();
 

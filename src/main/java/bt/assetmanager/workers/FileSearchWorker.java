@@ -13,7 +13,6 @@ import com.vaadin.flow.component.notification.Notification;
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author Lukas Hartwig
@@ -97,7 +96,7 @@ public class FileSearchWorker implements BackgroundWorker
             row.setAbsolutePath(temp.getPath());
             row.setRelativePath(temp.getPath().substring(ImportView.getSelectedOriginDirectory().getAbsolutePath().length()));
             return row;
-        }).collect(Collectors.toList()));
+        }).toList());
 
         this.importView.setSoundFiles(tempSoundFiles.parallelStream().map(temp -> {
             var row = new AssetImportRow();
@@ -105,7 +104,7 @@ public class FileSearchWorker implements BackgroundWorker
             row.setAbsolutePath(temp.getPath());
             row.setRelativePath(temp.getPath().substring(ImportView.getSelectedOriginDirectory().getAbsolutePath().length()));
             return row;
-        }).collect(Collectors.toList()));
+        }).toList());
 
         this.importView.getTempImageRepo().deleteAll();
         this.importView.getTempSoundRepo().deleteAll();
@@ -170,9 +169,7 @@ public class FileSearchWorker implements BackgroundWorker
         Checkbox checkbox = new Checkbox();
         checkbox.setValue(row.isShouldImport());
 
-        checkbox.addValueChangeListener(event -> {
-            row.setShouldImport(event.getValue());
-        });
+        checkbox.addValueChangeListener(event -> row.setShouldImport(event.getValue()));
 
         row.setImportCheckbox(checkbox);
     }
@@ -225,7 +222,7 @@ public class FileSearchWorker implements BackgroundWorker
             this.importView.getImageFileEndingRepo().save(imageEnding);
         }
 
-        this.importView.setImageFileEndings(this.importView.getImageFileEndingRepo().findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList()));
+        this.importView.setImageFileEndings(this.importView.getImageFileEndingRepo().findAll().stream().map(ImageFileEnding::getEnding).toList());
     }
 
     private void replaceSoundEndings()
@@ -240,6 +237,6 @@ public class FileSearchWorker implements BackgroundWorker
             this.importView.getSoundFileEndingRepo().save(soundEnding);
         }
 
-        this.importView.setSoundFileEndings(this.importView.getSoundFileEndingRepo().findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList()));
+        this.importView.setSoundFileEndings(this.importView.getSoundFileEndingRepo().findAll().stream().map(SoundFileEnding::getEnding).toList());
     }
 }

@@ -19,15 +19,7 @@ public class ImportFileBundler
     private Bundle obtainBundle(AssetImportRow asset)
     {
         String folder = new File(asset.getAbsolutePath()).getParent().toLowerCase();
-        Bundle bundle = this.bundlesFiles.get(folder);
-
-        if (bundle == null)
-        {
-            bundle = new Bundle();
-            this.bundlesFiles.put(folder, bundle);
-        }
-
-        return bundle;
+        return this.bundlesFiles.computeIfAbsent(folder, f -> new Bundle());
     }
 
     public void addImage(AssetImportRow asset)

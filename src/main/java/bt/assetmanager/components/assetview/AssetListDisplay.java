@@ -8,6 +8,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.server.StreamResource;
 
 import java.awt.*;
@@ -16,7 +17,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * @author Lukas Hartwig
@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 public class AssetListDisplay<T extends Asset> extends AssetDisplay<T>
 {
     private Grid<T> grid;
-    private Consumer<T> onElementPlay;
+    private SerializableConsumer<T> onElementPlay;
 
     public AssetListDisplay(Class<T> clazz)
     {
@@ -42,7 +42,7 @@ public class AssetListDisplay<T extends Asset> extends AssetDisplay<T>
         add(this.grid);
     }
 
-    public void onElementPlay(Consumer<T> consumer)
+    public void onElementPlay(SerializableConsumer<T> consumer)
     {
         this.onElementPlay = consumer;
     }
@@ -56,15 +56,12 @@ public class AssetListDisplay<T extends Asset> extends AssetDisplay<T>
 
     protected Grid<T> createGrid()
     {
-        Grid<T> newGrid = new Grid<T>(this.clazz, false);
+        Grid<T> newGrid = new Grid<>(this.clazz, false);
 
         newGrid.addSelectionListener(e -> {
-            if (e.getFirstSelectedItem().isPresent())
+            if (e.getFirstSelectedItem().isPresent() && this.onElementSelection != null)
             {
-                if (this.onElementSelection != null)
-                {
-                    this.onElementSelection.accept(e.getFirstSelectedItem().get());
-                }
+                this.onElementSelection.accept(e.getFirstSelectedItem().get());
             }
         });
 

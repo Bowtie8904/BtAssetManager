@@ -26,13 +26,11 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.virtuallist.VirtualList;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.server.StreamResource;
 
 import java.awt.*;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,7 +40,7 @@ import java.util.function.Consumer;
  * @author Lukas Hartwig
  * @since 31.08.2022
  */
-public class AssetSearchPanel<T extends Asset> extends Div
+public class AssetSearchPanel<T extends Asset & Serializable> extends Div
 {
     private static ExecutorService executorService = Executors.newCachedThreadPool();
     private AssetService<T> assetService;
@@ -58,9 +56,8 @@ public class AssetSearchPanel<T extends Asset> extends Div
     private Button addTagButton;
     private Label foundFilesLabel;
     private VirtualList<String> tagList;
-    private Consumer<List<T>> onSearchConsumer;
-    private Consumer<String> onAddTagConsumer;
-    private Consumer<Boolean> onViewChange;
+    private SerializableConsumer<List<T>> onSearchConsumer;
+    private SerializableConsumer<Boolean> onViewChange;
     private Button switchLayoutButton;
     private boolean displayLines;
     private Button openFolderButton;
@@ -111,17 +108,12 @@ public class AssetSearchPanel<T extends Asset> extends Div
         }
     }
 
-    public void onSearch(Consumer<List<T>> consumer)
+    public void onSearch(SerializableConsumer<List<T>> consumer)
     {
         this.onSearchConsumer = consumer;
     }
 
-    public void onAddTag(Consumer<String> consumer)
-    {
-        this.onAddTagConsumer = consumer;
-    }
-
-    public void onViewChange(Consumer<Boolean> consumer)
+    public void onViewChange(SerializableConsumer<Boolean> consumer)
     {
         this.onViewChange = consumer;
     }
@@ -159,9 +151,7 @@ public class AssetSearchPanel<T extends Asset> extends Div
         this.tagList = new VirtualList<>();
         this.tagList.setRenderer(new ComponentRenderer<>(tagName -> {
             Button removeButton = new Button("x");
-            removeButton.addClickListener(e -> {
-                onRemoveTagButton(tagName);
-            });
+            removeButton.addClickListener(e -> onRemoveTagButton(tagName));
 
             Label label = new Label(tagName);
 

@@ -10,10 +10,8 @@ import com.vaadin.flow.server.StreamResource;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Lukas Hartwig
@@ -21,7 +19,7 @@ import java.util.Map;
  */
 public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
 {
-    private Grid<AssetGridDisplay.AssetGridRow> grid;
+    private Grid<AssetGridRow> grid;
     private int elementsPerRow;
     private Image selectedImage;
 
@@ -44,7 +42,7 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
     @Override
     public void setItems(List<T> items)
     {
-        List<AssetGridDisplay.AssetGridRow> rows = new LinkedList<>();
+        List<AssetGridRow> rows = new LinkedList<>();
         int currentIndex = 0;
         AssetGridRow currentRow = new AssetGridRow();
 
@@ -74,17 +72,17 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
     {
         if (this.selectedImage != null)
         {
-            this.selectedImage.getStyle().set("border", "6px solid transparent");
+            setImageBorder(this.selectedImage, "6px solid transparent");
         }
 
         this.selectedImage = image;
-        this.selectedImage.getStyle().set("border", "6px solid DarkOrange");
+        setImageBorder(this.selectedImage, "6px solid DarkOrange");
         this.selectedImage.getStyle().set("border-radius", "25px");
     }
 
-    protected Grid<AssetGridDisplay.AssetGridRow> createGrid()
+    protected Grid<AssetGridRow> createGrid()
     {
-        Grid<AssetGridDisplay.AssetGridRow> newGrid = new Grid<AssetGridDisplay.AssetGridRow>(AssetGridRow.class, false);
+        Grid<AssetGridRow> newGrid = new Grid<>(AssetGridRow.class, false);
 
         for (int i = 0; i < this.elementsPerRow; i++)
         {
@@ -110,7 +108,7 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
                                               Image image = new Image(imageResource, "Couldn't load image");
                                               image.setHeight("80px");
                                               image.setWidth("80px");
-                                              image.getStyle().set("border", "6px solid transparent");
+                                              setImageBorder(image, "6px solid transparent");
 
                                               image.addClickListener(e -> {
                                                   if (this.onElementSelection != null)
@@ -137,26 +135,8 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
         return newGrid;
     }
 
-    class AssetGridRow
+    private void setImageBorder(Image image, String borderValue)
     {
-        private Map<Integer, Asset> assets;
-        private int currentIndex;
-
-        public AssetGridRow()
-        {
-            this.assets = new HashMap<>();
-            this.currentIndex = 0;
-        }
-
-        public void add(Asset asset)
-        {
-            this.assets.put(this.currentIndex, asset);
-            this.currentIndex++;
-        }
-
-        public Asset get(int index)
-        {
-            return this.assets.get(index);
-        }
+        image.getStyle().set("border", borderValue);
     }
 }

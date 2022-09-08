@@ -3,8 +3,10 @@ package bt.assetmanager.components.assetview;
 import bt.assetmanager.components.AssetSearchPanel;
 import bt.assetmanager.data.entity.Asset;
 import bt.assetmanager.data.entity.ImageAsset;
+import bt.assetmanager.data.entity.UserOption;
 import bt.assetmanager.data.service.AssetService;
 import bt.assetmanager.data.service.TagService;
+import bt.assetmanager.data.service.UserOptionService;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 
 import java.util.ArrayList;
@@ -20,15 +22,20 @@ public class AssetView<T extends Asset> extends SplitLayout
     private AssetSearchPanel<T> assetSearchPanel;
     private Class<T> clazz;
     private transient List<T> items = new ArrayList<>();
+    private UserOptionService optionsService;
 
-    public AssetView(Class<T> clazz, AssetService<T> assetService, TagService tagService)
+    public AssetView(Class<T> clazz, AssetService<T> assetService, TagService tagService, UserOptionService optionsService)
     {
         this.clazz = clazz;
+        this.optionsService = optionsService;
 
-        this.assetSearchPanel = new AssetSearchPanel<>(clazz, assetService, tagService);
+        boolean showGridView = this.clazz.equals(ImageAsset.class) && this.optionsService.getValue(UserOption.IMAGE_GRID_OR_LIST_VIEW).equals("grid");
+        boolean saveTagsInMetadata = this.optionsService.getBooleanValue(UserOption.SAVE_TAGS_IN_FILE_FORMAT_METADATA);
+
+        this.assetSearchPanel = new AssetSearchPanel<>(clazz, assetService, tagService, showGridView, saveTagsInMetadata);
         addToSecondary(this.assetSearchPanel);
 
-        if (this.clazz.equals(ImageAsset.class))
+        if (showGridView)
         {
             createGridView();
         }
@@ -36,30 +43,39 @@ public class AssetView<T extends Asset> extends SplitLayout
         {
             createListView();
         }
+
+        this.assetSearchPanel.onViewChange(displayList -> {
+            if (Boolean.TRUE.equals(displayList))
+            {
+                createListView();
+                this.optionsService.setValue(UserOption.IMAGE_GRID_OR_LIST_VIEW, "list");
+            }
+            else
+            {
+                createGridView();
+                this.optionsService.setValue(UserOption.IMAGE_GRID_OR_LIST_VIEW, "grid");
+            }
+
+            this.grid.setItems(this.items);
+        });
+
+        if (this.optionsService.getBooleanValue(UserOption.DISPLAY_ALL_ASSETS_ON_PAGE_OPEN))
+        {
+            this.assetSearchPanel.onSearchButton();
+        }
     }
 
     protected void createGridView()
     {
-        this.grid = new AssetGridDisplay<>(this.clazz, 10);
+        this.grid = new AssetGridDisplay<>(this.clazz,
+                                           this.optionsService.getIntValue(UserOption.IMAGE_GRID_IMAGES_PER_ROW),
+                                           this.optionsService.getBooleanValue(UserOption.IMAGE_GRID_KEEP_ASPECT_RATIO));
         this.assetSearchPanel.onSearch(list -> {
             this.items = list;
             this.grid.setItems(list);
         });
         this.grid.onElementSelection(element -> this.assetSearchPanel.setSelectedElement(element));
         addToPrimary(this.grid);
-
-        this.assetSearchPanel.onViewChange(displayList -> {
-            if (Boolean.TRUE.equals(displayList))
-            {
-                createListView();
-            }
-            else
-            {
-                createGridView();
-            }
-
-            this.grid.setItems(this.items);
-        });
     }
 
     protected void createListView()

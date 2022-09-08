@@ -4,6 +4,8 @@ import bt.assetmanager.data.entity.Asset;
 import bt.assetmanager.util.UIUtils;
 import bt.log.Log;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.server.StreamResource;
@@ -22,12 +24,14 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
     private Grid<AssetGridRow> grid;
     private int elementsPerRow;
     private Image selectedImage;
+    private boolean keepImageAspectRatio;
 
-    public AssetGridDisplay(Class<T> clazz, int elementsPerRow)
+    public AssetGridDisplay(Class<T> clazz, int elementsPerRow, boolean keepImageAspectRatio)
     {
         super(clazz);
         setClassName("grid-wrapper");
         this.elementsPerRow = elementsPerRow;
+        this.keepImageAspectRatio = keepImageAspectRatio;
         setup();
     }
 
@@ -77,12 +81,14 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
 
         this.selectedImage = image;
         setImageBorder(this.selectedImage, "6px solid DarkOrange");
-        this.selectedImage.getStyle().set("border-radius", "25px");
+        this.selectedImage.getStyle().set("border-radius", "15px");
     }
 
     protected Grid<AssetGridRow> createGrid()
     {
         Grid<AssetGridRow> newGrid = new Grid<>(AssetGridRow.class, false);
+
+        String imageSize = (100.0 / this.elementsPerRow) + "%";
 
         for (int i = 0; i < this.elementsPerRow; i++)
         {
@@ -106,9 +112,9 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
                                               });
 
                                               Image image = new Image(imageResource, "Couldn't load image");
-                                              image.setHeight("80px");
-                                              image.setWidth("80px");
+
                                               setImageBorder(image, "6px solid transparent");
+                                              image.getStyle().set("border-radius", "15px");
 
                                               image.addClickListener(e -> {
                                                   if (this.onElementSelection != null)
@@ -119,7 +125,24 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
                                                   selectImage(image);
                                               });
 
-                                              return image;
+                                              if (this.keepImageAspectRatio)
+                                              {
+                                                  image.setWidth("100%");
+                                                  image.setHeight("100%");
+
+                                                  return image;
+                                              }
+                                              else
+                                              {
+                                                  Div wrapper = new Div();
+                                                  wrapper.setWidth("100%");
+
+                                                  wrapper.addClassName("image-container");
+                                                  image.addClassName("grid-image-ignore-ratio");
+                                                  wrapper.add(image);
+
+                                                  return wrapper;
+                                              }
                                           }
                                           else
                                           {
@@ -127,10 +150,11 @@ public class AssetGridDisplay<T extends Asset> extends AssetDisplay<T>
                                           }
                                       }
                               )
-            ).setHeader("").setKey("image" + i);
+            ).setHeader("").setKey("image" + i).setWidth(imageSize);
         }
 
         newGrid.setSelectionMode(Grid.SelectionMode.NONE);
+        newGrid.addThemeVariants(GridVariant.LUMO_NO_ROW_BORDERS);
 
         return newGrid;
     }

@@ -2,6 +2,7 @@
 @import url('./views/images-view.css');
 @import url('./views/sounds-view.css');
 @import url('./views/import-view.css');
+@import url('./views/options-view.css');
 @import url('line-awesome/dist/line-awesome/css/line-awesome.min.css');
     [theme~="dark"] {
       --lumo-primary-color: hsl(220, 43%, 44%);

@@ -64,12 +64,15 @@ public class AssetSearchPanel<T extends Asset & Serializable> extends Div
     private Button deleteButton;
     private ProgressBar progressBar;
     private Label progressLabel;
+    private boolean saveTagsInMetadata;
 
-    public AssetSearchPanel(Class<T> clazz, AssetService<T> assetService, TagService tagService)
+    public AssetSearchPanel(Class<T> clazz, AssetService<T> assetService, TagService tagService, boolean gridView, boolean saveTagsInMetadata)
     {
         this.assetService = assetService;
         this.tagService = tagService;
         this.clazz = clazz;
+        this.displayLines = !gridView;
+        this.saveTagsInMetadata = saveTagsInMetadata;
         createUI();
     }
 
@@ -162,7 +165,16 @@ public class AssetSearchPanel<T extends Asset & Serializable> extends Div
             return tagLayout;
         }));
 
-        this.switchLayoutButton = new Button(new Icon(VaadinIcon.LINES_LIST));
+        this.switchLayoutButton = new Button();
+
+        if (this.displayLines)
+        {
+            this.switchLayoutButton.setIcon(new Icon(VaadinIcon.GRID_SMALL));
+        }
+        else
+        {
+            this.switchLayoutButton.setIcon(new Icon(VaadinIcon.LINES_LIST));
+        }
 
         this.switchLayoutButton.addClickListener(e -> {
             this.displayLines = !this.displayLines;
@@ -260,7 +272,7 @@ public class AssetSearchPanel<T extends Asset & Serializable> extends Div
             }
 
             this.currentlySelectedElement.setTags(tags);
-            this.assetService.save(this.currentlySelectedElement, true);
+            this.assetService.save(this.currentlySelectedElement, this.saveTagsInMetadata);
             this.tagList.setItems(this.currentlySelectedElement.getTags().stream().map(Tag::getName));
         }
 
@@ -282,11 +294,11 @@ public class AssetSearchPanel<T extends Asset & Serializable> extends Div
         }
 
         this.currentlySelectedElement.setTags(tags);
-        this.assetService.save(this.currentlySelectedElement, true);
+        this.assetService.save(this.currentlySelectedElement, this.saveTagsInMetadata);
         this.tagList.setItems(this.currentlySelectedElement.getTags().stream().map(Tag::getName));
     }
 
-    private void onSearchButton()
+    public void onSearchButton()
     {
         this.switchLayoutButton.setEnabled(false);
         this.openFolderButton.setEnabled(false);

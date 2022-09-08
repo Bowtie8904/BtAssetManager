@@ -1,6 +1,6 @@
 package bt.assetmanager.components.assetview;
 
-import bt.assetmanager.components.SearchAndPreviewLayout;
+import bt.assetmanager.components.AssetSearchPanel;
 import bt.assetmanager.data.entity.Asset;
 import bt.assetmanager.data.entity.ImageAsset;
 import bt.assetmanager.data.service.AssetService;
@@ -17,7 +17,7 @@ import java.util.List;
 public class AssetView<T extends Asset> extends SplitLayout
 {
     private AssetDisplay<T> grid;
-    private SearchAndPreviewLayout<T> searchAndPreview;
+    private AssetSearchPanel<T> assetSearchPanel;
     private Class<T> clazz;
     private List<T> items = new ArrayList<>();
 
@@ -25,8 +25,8 @@ public class AssetView<T extends Asset> extends SplitLayout
     {
         this.clazz = clazz;
 
-        this.searchAndPreview = new SearchAndPreviewLayout(clazz, assetService, tagService);
-        addToSecondary(this.searchAndPreview);
+        this.assetSearchPanel = new AssetSearchPanel(clazz, assetService, tagService);
+        addToSecondary(this.assetSearchPanel);
 
         if (this.clazz.equals(ImageAsset.class))
         {
@@ -41,14 +41,14 @@ public class AssetView<T extends Asset> extends SplitLayout
     protected void createGridView()
     {
         this.grid = new AssetGridDisplay<T>(this.clazz, 10);
-        this.searchAndPreview.onSearch(list -> {
+        this.assetSearchPanel.onSearch(list -> {
             this.items = list;
             this.grid.setItems(list);
         });
-        this.grid.onElementSelection(element -> this.searchAndPreview.setSelectedElement(element));
+        this.grid.onElementSelection(element -> this.assetSearchPanel.setSelectedElement(element));
         addToPrimary(this.grid);
 
-        this.searchAndPreview.onViewChange(displayList -> {
+        this.assetSearchPanel.onViewChange(displayList -> {
             if (displayList)
             {
                 createListView();
@@ -65,15 +65,15 @@ public class AssetView<T extends Asset> extends SplitLayout
     protected void createListView()
     {
         this.grid = new AssetListDisplay<T>(this.clazz);
-        this.searchAndPreview.onSearch(list -> {
+        this.assetSearchPanel.onSearch(list -> {
             this.items = list;
             this.grid.setItems(list);
         });
-        this.grid.onElementSelection(element -> this.searchAndPreview.setSelectedElement(element));
+        this.grid.onElementSelection(element -> this.assetSearchPanel.setSelectedElement(element));
 
         ((AssetListDisplay<T>)this.grid).onElementPlay(element -> {
-            this.searchAndPreview.setSelectedElement(element);
-            this.searchAndPreview.playSound();
+            this.assetSearchPanel.setSelectedElement(element);
+            this.assetSearchPanel.playSound();
         });
         addToPrimary(this.grid);
     }

@@ -6,8 +6,10 @@ import bt.assetmanager.data.entity.Tag;
 import bt.assetmanager.data.service.AssetService;
 import bt.assetmanager.data.service.TagService;
 import bt.assetmanager.util.UIUtils;
+import bt.assetmanager.workers.AssetSearchWorker;
 import bt.log.Log;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -21,6 +23,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.virtuallist.VirtualList;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.server.StreamResource;
@@ -30,17 +33,18 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * @author Lukas Hartwig
  * @since 31.08.2022
  */
-public class SearchAndPreviewLayout<T extends Asset> extends Div
+public class AssetSearchPanel<T extends Asset> extends Div
 {
+    private static ExecutorService executorService = Executors.newCachedThreadPool();
     private AssetService<T> assetService;
     private TagService tagService;
     private T currentlySelectedElement;
@@ -61,8 +65,10 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
     private boolean displayLines;
     private Button openFolderButton;
     private Button deleteButton;
+    private ProgressBar progressBar;
+    private Label progressLabel;
 
-    public SearchAndPreviewLayout(Class<T> clazz, AssetService<T> assetService, TagService tagService)
+    public AssetSearchPanel(Class<T> clazz, AssetService<T> assetService, TagService tagService)
     {
         this.assetService = assetService;
         this.tagService = tagService;
@@ -215,6 +221,11 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
 
         this.deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
 
+        this.progressBar = new ProgressBar();
+        this.progressBar.setVisible(false);
+
+        this.progressLabel = new Label("");
+
         Component[] fields = new Component[] { this.clazz.equals(ImageAsset.class) ? this.switchLayoutButton : UIUtils.heightFiller("40px"),
                                                UIUtils.heightFiller("10px"),
                                                this.clazz.equals(ImageAsset.class) ? this.openFolderButton : UIUtils.heightFiller("40px"),
@@ -223,7 +234,9 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
                                                this.searchTextField,
                                                this.fileNameFilterCheckbox,
                                                this.searchButton,
-                                               UIUtils.heightFiller("50px"),
+                                               UIUtils.heightFiller("10px"),
+                                               this.progressLabel,
+                                               this.progressBar,
                                                new Hr(),
                                                this.clazz.equals(ImageAsset.class) ? this.image : this.audioPlayer,
                                                new Hr(),
@@ -285,32 +298,65 @@ public class SearchAndPreviewLayout<T extends Asset> extends Div
 
     private void onSearchButton()
     {
-        List<T> resultSet = List.of();
+        this.switchLayoutButton.setEnabled(false);
+        this.openFolderButton.setEnabled(false);
+        this.searchButton.setEnabled(false);
+        this.addTagButton.setEnabled(false);
+        this.deleteButton.setEnabled(false);
 
-        if (this.searchTextField.getValue().trim().isEmpty())
-        {
-            resultSet = this.assetService.findAll();
-        }
-        else
-        {
-            if (this.fileNameFilterCheckbox.getValue())
-            {
-                resultSet = this.assetService.findByFileName(this.searchTextField.getValue().trim());
-            }
-            else
-            {
-                String[] singleTags = this.searchTextField.getValue().split(",");
-                List<String> singleTagList = Arrays.asList(singleTags).stream().map(String::trim).map(String::toUpperCase).collect(Collectors.toList());
+        UI.getCurrent().setPollInterval(500);
+        UI ui = UI.getCurrent();
 
-                resultSet = this.assetService.findByTags(singleTagList);
-            }
-        }
+        executorService.submit(() -> {
+            var worker = new AssetSearchWorker<T>(this);
 
-        this.foundFilesLabel.setText(resultSet.size() + " files found");
+            worker.onFinish(() -> {
+                this.progressBar.setVisible(false);
+                this.progressLabel.setText("");
 
-        if (this.onSearchConsumer != null)
-        {
-            this.onSearchConsumer.accept(resultSet);
-        }
+                this.switchLayoutButton.setEnabled(true);
+                this.openFolderButton.setEnabled(true);
+                this.searchButton.setEnabled(true);
+                this.addTagButton.setEnabled(true);
+                this.deleteButton.setEnabled(true);
+            });
+
+            worker.work(ui);
+        });
+    }
+
+    public AssetService<T> getAssetService()
+    {
+        return assetService;
+    }
+
+    public TagSearchTextField getSearchTextField()
+    {
+        return searchTextField;
+    }
+
+    public Checkbox getFileNameFilterCheckbox()
+    {
+        return fileNameFilterCheckbox;
+    }
+
+    public Label getFoundFilesLabel()
+    {
+        return foundFilesLabel;
+    }
+
+    public Consumer<List<T>> getOnSearchConsumer()
+    {
+        return onSearchConsumer;
+    }
+
+    public ProgressBar getProgressBar()
+    {
+        return progressBar;
+    }
+
+    public Label getProgressLabel()
+    {
+        return progressLabel;
     }
 }

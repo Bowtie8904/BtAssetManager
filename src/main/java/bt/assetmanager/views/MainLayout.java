@@ -2,6 +2,7 @@ package bt.assetmanager.views;
 
 import bt.assetmanager.views.images.ImagesView;
 import bt.assetmanager.views.import_.ImportView;
+import bt.assetmanager.views.options.OptionsView;
 import bt.assetmanager.views.sounds.SoundsView;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
@@ -35,7 +36,6 @@ public class MainLayout extends AppLayout
         for (MenuItemInfo menuItem : createMenuItems())
         {
             list.add(menuItem);
-
         }
 
         header.add(nav);
@@ -44,13 +44,11 @@ public class MainLayout extends AppLayout
 
     private MenuItemInfo[] createMenuItems()
     {
-        return new MenuItemInfo[] { //
-                                    new MenuItemInfo("Images", "la la-image", ImagesView.class), //
-
-                                    new MenuItemInfo("Sounds", "la la-music", SoundsView.class), //
-
-                                    new MenuItemInfo("Import", "la la-upload", ImportView.class), //
-
+        return new MenuItemInfo[] {
+                new MenuItemInfo("Images", "la la-image", ImagesView.class),
+                new MenuItemInfo("Sounds", "la la-music", SoundsView.class),
+                new MenuItemInfo("Import", "la la-upload", ImportView.class),
+                new MenuItemInfo("Options", "la la-cog", OptionsView.class)
         };
     }
 

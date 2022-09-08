@@ -42,3 +42,23 @@
 .images-view .grid-wrapper {
   width: 100%;
 }
+
+.images-view .image-container {
+  position: relative;
+}
+
+.image-container:after {
+  content: "";
+  display: block;
+  padding-bottom: 100%; /* The padding depends on the width, not on the height, so with a padding-bottom of 100% you will get a square */
+}
+
+.image-container .grid-image-ignore-ratio {
+  position: absolute; /* Take your picture out of the flow */
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 80%;
+  height: 80%;
+}

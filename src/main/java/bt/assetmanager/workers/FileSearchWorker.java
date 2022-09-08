@@ -11,6 +11,7 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.notification.Notification;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,35 +53,30 @@ public class FileSearchWorker implements BackgroundWorker
         replaceImageEndings();
         replaceSoundEndings();
 
-        this.importView.getImageFiles().clear();
-        this.importView.getSoundFiles().clear();
+        ui.access(() -> {
+            this.importView.setImageFiles(new ArrayList<>());
+            this.importView.setSoundFiles(new ArrayList<>());
+        });
         ui.access(() -> this.importView.getImageGrid().setItems(this.importView.getImageFiles()));
         ui.access(() -> this.importView.getSoundGrid().setItems(this.importView.getSoundFiles()));
 
         List<TempImageAsset> tempImageFiles = new LinkedList<>();
         List<TempSoundAsset> tempSoundFiles = new LinkedList<>();
 
-        if (this.importView.getDirectoryTextField().getValue().trim().isEmpty())
+        this.importView.setSelectedOriginDirectory(new File(this.importView.getDirectoryTextField().getValue()));
+
+        if (this.importView.getSelectedOriginDirectory().exists() && !this.importView.getSelectedOriginDirectory().isDirectory())
         {
-            this.importView.getDirectoryTextField().setErrorMessage("Select a folder to search in");
-            this.importView.getDirectoryTextField().setInvalid(true);
+            this.importView.setSelectedOriginDirectory(this.importView.getSelectedOriginDirectory().getParentFile());
+        }
+
+        if (!this.importView.getSelectedOriginDirectory().exists())
+        {
+            Notification.show("Folder " + this.importView.getSelectedOriginDirectory().getAbsolutePath() + " does not exist");
             return;
         }
 
-        ImportView.setSelectedOriginDirectory(new File(this.importView.getDirectoryTextField().getValue()));
-
-        if (ImportView.getSelectedOriginDirectory().exists() && !ImportView.getSelectedOriginDirectory().isDirectory())
-        {
-            ImportView.setSelectedOriginDirectory(ImportView.getSelectedOriginDirectory().getParentFile());
-        }
-
-        if (!ImportView.getSelectedOriginDirectory().exists())
-        {
-            Notification.show("Folder " + ImportView.getSelectedOriginDirectory().getAbsolutePath() + " does not exist");
-            return;
-        }
-
-        fillFileGrids(ImportView.getSelectedOriginDirectory(), tempImageFiles, tempSoundFiles);
+        fillFileGrids(this.importView.getSelectedOriginDirectory(), tempImageFiles, tempSoundFiles);
 
         this.ui.access(() -> this.importView.getProgressFolderLabel().setText(""));
         this.ui.access(() -> this.importView.getProgressLabel().setText("Filtering out already imported files..."));
@@ -94,16 +90,16 @@ public class FileSearchWorker implements BackgroundWorker
         this.importView.setImageFiles(tempImageFiles.parallelStream().map(temp -> {
             var row = new AssetImportRow();
             row.setFileName(temp.getFileName());
-            row.setAbsolutePath(temp.getPath());
-            row.setRelativePath(temp.getPath().substring(ImportView.getSelectedOriginDirectory().getAbsolutePath().length()));
+            row.setPath(temp.getPath());
+            row.setRelativePath(temp.getPath().substring(this.importView.getSelectedOriginDirectory().getAbsolutePath().length()));
             return row;
         }).collect(Collectors.toList()));
 
         this.importView.setSoundFiles(tempSoundFiles.parallelStream().map(temp -> {
             var row = new AssetImportRow();
             row.setFileName(temp.getFileName());
-            row.setAbsolutePath(temp.getPath());
-            row.setRelativePath(temp.getPath().substring(ImportView.getSelectedOriginDirectory().getAbsolutePath().length()));
+            row.setPath(temp.getPath());
+            row.setRelativePath(temp.getPath().substring(this.importView.getSelectedOriginDirectory().getAbsolutePath().length()));
             return row;
         }).collect(Collectors.toList()));
 
@@ -170,9 +166,7 @@ public class FileSearchWorker implements BackgroundWorker
         Checkbox checkbox = new Checkbox();
         checkbox.setValue(row.isShouldImport());
 
-        checkbox.addValueChangeListener(event -> {
-            row.setShouldImport(event.getValue());
-        });
+        checkbox.addValueChangeListener(event -> row.setShouldImport(event.getValue()));
 
         row.setImportCheckbox(checkbox);
     }
@@ -225,7 +219,7 @@ public class FileSearchWorker implements BackgroundWorker
             this.importView.getImageFileEndingRepo().save(imageEnding);
         }
 
-        this.importView.setImageFileEndings(this.importView.getImageFileEndingRepo().findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList()));
+        this.importView.setImageFileEndings(this.importView.getImageFileEndingRepo().findAll().stream().map(ImageFileEnding::getEnding).toList());
     }
 
     private void replaceSoundEndings()
@@ -240,6 +234,6 @@ public class FileSearchWorker implements BackgroundWorker
             this.importView.getSoundFileEndingRepo().save(soundEnding);
         }
 
-        this.importView.setSoundFileEndings(this.importView.getSoundFileEndingRepo().findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList()));
+        this.importView.setSoundFileEndings(this.importView.getSoundFileEndingRepo().findAll().stream().map(SoundFileEnding::getEnding).toList());
     }
 }

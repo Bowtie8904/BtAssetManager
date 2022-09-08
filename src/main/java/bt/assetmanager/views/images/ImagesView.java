@@ -4,6 +4,7 @@ import bt.assetmanager.components.assetview.AssetView;
 import bt.assetmanager.data.entity.ImageAsset;
 import bt.assetmanager.data.service.ImageAssetService;
 import bt.assetmanager.data.service.TagService;
+import bt.assetmanager.data.service.UserOptionService;
 import bt.assetmanager.views.MainLayout;
 import com.vaadin.flow.component.dependency.Uses;
 import com.vaadin.flow.component.html.Div;
@@ -21,10 +22,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class ImagesView extends Div
 {
     @Autowired
-    public ImagesView(ImageAssetService assetService, TagService tagService)
+    public ImagesView(ImageAssetService assetService, TagService tagService, UserOptionService optionsService)
     {
         addClassNames("images-view");
-        SplitLayout splitLayout = new AssetView<ImageAsset>(ImageAsset.class, assetService, tagService);
+        SplitLayout splitLayout = new AssetView<ImageAsset>(ImageAsset.class, assetService, tagService, optionsService);
         add(splitLayout);
     }
 }

@@ -1,12 +1,13 @@
 package bt.assetmanager.views.import_;
 
+import bt.assetmanager.obj.HasFilePath;
 import com.vaadin.flow.component.checkbox.Checkbox;
 
 /**
  * @author Lukas Hartwig
  * @since 29.08.2022
  */
-public class AssetImportRow
+public class AssetImportRow implements HasFilePath
 {
     private boolean shouldImport;
     private String fileName;
@@ -43,12 +44,12 @@ public class AssetImportRow
         this.fileName = fileName;
     }
 
-    public String getAbsolutePath()
+    public String getPath()
     {
         return absolutePath;
     }
 
-    public void setAbsolutePath(String absolutePath)
+    public void setPath(String absolutePath)
     {
         this.absolutePath = absolutePath;
     }
@@ -86,9 +87,9 @@ public class AssetImportRow
     @Override
     public boolean equals(Object o)
     {
-        if (o instanceof AssetImportRow)
+        if (o instanceof AssetImportRow row)
         {
-            return ((AssetImportRow)o).getAbsolutePath().equalsIgnoreCase(this.absolutePath);
+            return row.getPath().equalsIgnoreCase(this.absolutePath);
         }
 
         return false;

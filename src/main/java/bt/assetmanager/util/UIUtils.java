@@ -8,6 +8,11 @@ import com.vaadin.flow.component.html.Span;
  */
 public final class UIUtils
 {
+    private UIUtils()
+    {
+
+    }
+
     public static Span heightFiller(String height)
     {
         Span span = new Span();

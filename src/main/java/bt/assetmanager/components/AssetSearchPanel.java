@@ -26,13 +26,11 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.virtuallist.VirtualList;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.server.StreamResource;
 
 import java.awt.*;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,7 +40,7 @@ import java.util.function.Consumer;
  * @author Lukas Hartwig
  * @since 31.08.2022
  */
-public class AssetSearchPanel<T extends Asset> extends Div
+public class AssetSearchPanel<T extends Asset & Serializable> extends Div
 {
     private static ExecutorService executorService = Executors.newCachedThreadPool();
     private AssetService<T> assetService;
@@ -58,21 +56,24 @@ public class AssetSearchPanel<T extends Asset> extends Div
     private Button addTagButton;
     private Label foundFilesLabel;
     private VirtualList<String> tagList;
-    private Consumer<List<T>> onSearchConsumer;
-    private Consumer<String> onAddTagConsumer;
-    private Consumer<Boolean> onViewChange;
+    private SerializableConsumer<List<T>> onSearchConsumer;
+    private SerializableConsumer<Boolean> onViewChange;
+    private SerializableConsumer<T> onDelete;
     private Button switchLayoutButton;
     private boolean displayLines;
     private Button openFolderButton;
     private Button deleteButton;
     private ProgressBar progressBar;
     private Label progressLabel;
+    private boolean saveTagsInMetadata;
 
-    public AssetSearchPanel(Class<T> clazz, AssetService<T> assetService, TagService tagService)
+    public AssetSearchPanel(Class<T> clazz, AssetService<T> assetService, TagService tagService, boolean gridView, boolean saveTagsInMetadata)
     {
         this.assetService = assetService;
         this.tagService = tagService;
         this.clazz = clazz;
+        this.displayLines = !gridView;
+        this.saveTagsInMetadata = saveTagsInMetadata;
         createUI();
     }
 
@@ -111,19 +112,19 @@ public class AssetSearchPanel<T extends Asset> extends Div
         }
     }
 
-    public void onSearch(Consumer<List<T>> consumer)
+    public void onSearch(SerializableConsumer<List<T>> consumer)
     {
         this.onSearchConsumer = consumer;
     }
 
-    public void onAddTag(Consumer<String> consumer)
-    {
-        this.onAddTagConsumer = consumer;
-    }
-
-    public void onViewChange(Consumer<Boolean> consumer)
+    public void onViewChange(SerializableConsumer<Boolean> consumer)
     {
         this.onViewChange = consumer;
+    }
+
+    public void onDelete(SerializableConsumer<T> consumer)
+    {
+        this.onDelete = consumer;
     }
 
     private void createUI()
@@ -159,9 +160,7 @@ public class AssetSearchPanel<T extends Asset> extends Div
         this.tagList = new VirtualList<>();
         this.tagList.setRenderer(new ComponentRenderer<>(tagName -> {
             Button removeButton = new Button("x");
-            removeButton.addClickListener(e -> {
-                onRemoveTagButton(tagName);
-            });
+            removeButton.addClickListener(e -> onRemoveTagButton(tagName));
 
             Label label = new Label(tagName);
 
@@ -172,7 +171,16 @@ public class AssetSearchPanel<T extends Asset> extends Div
             return tagLayout;
         }));
 
-        this.switchLayoutButton = new Button(new Icon(VaadinIcon.LINES_LIST));
+        this.switchLayoutButton = new Button();
+
+        if (this.displayLines)
+        {
+            this.switchLayoutButton.setIcon(new Icon(VaadinIcon.GRID_SMALL));
+        }
+        else
+        {
+            this.switchLayoutButton.setIcon(new Icon(VaadinIcon.LINES_LIST));
+        }
 
         this.switchLayoutButton.addClickListener(e -> {
             this.displayLines = !this.displayLines;
@@ -215,7 +223,14 @@ public class AssetSearchPanel<T extends Asset> extends Div
             {
                 this.assetService.delete(this.currentlySelectedElement);
 
+                if (this.onDelete != null)
+                {
+                    this.onDelete.accept(this.currentlySelectedElement);
+                }
+
                 Notification.show("Removed file " + this.currentlySelectedElement.getFileName());
+
+                this.currentlySelectedElement = null;
             }
         });
 
@@ -270,7 +285,7 @@ public class AssetSearchPanel<T extends Asset> extends Div
             }
 
             this.currentlySelectedElement.setTags(tags);
-            this.assetService.save(this.currentlySelectedElement, true);
+            this.assetService.save(this.currentlySelectedElement, this.saveTagsInMetadata);
             this.tagList.setItems(this.currentlySelectedElement.getTags().stream().map(Tag::getName));
         }
 
@@ -292,11 +307,11 @@ public class AssetSearchPanel<T extends Asset> extends Div
         }
 
         this.currentlySelectedElement.setTags(tags);
-        this.assetService.save(this.currentlySelectedElement, true);
+        this.assetService.save(this.currentlySelectedElement, this.saveTagsInMetadata);
         this.tagList.setItems(this.currentlySelectedElement.getTags().stream().map(Tag::getName));
     }
 
-    private void onSearchButton()
+    public void onSearchButton()
     {
         this.switchLayoutButton.setEnabled(false);
         this.openFolderButton.setEnabled(false);

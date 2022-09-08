@@ -1,6 +1,7 @@
 package bt.assetmanager.util.metadata.image;
 
 import bt.assetmanager.constants.AssetManagerConstants;
+import bt.assetmanager.data.entity.Asset;
 import bt.assetmanager.data.entity.Tag;
 import bt.log.Log;
 import org.apache.commons.imaging.ImageReadException;
@@ -39,6 +40,10 @@ public final class ImageFileMetadataUtils
         supportedFileFormats.add("jpeg");
     }
 
+    private ImageFileMetadataUtils()
+    {
+    }
+
     public static boolean isValidImageFormat(File imageFile)
     {
         String fileFormat = "invalid";
@@ -65,10 +70,8 @@ public final class ImageFileMetadataUtils
             {
                 ImageMetadata metadata = Imaging.getMetadata(imageFile);
 
-                if (metadata instanceof JpegImageMetadata)
+                if (metadata instanceof JpegImageMetadata jpegMetadata)
                 {
-                    JpegImageMetadata jpegMetadata = (JpegImageMetadata)metadata;
-
                     TiffField field = jpegMetadata.findEXIFValueWithExactMatch(MicrosoftTagConstants.EXIF_TAG_XPKEYWORDS);
 
                     for (String tag : field.getValue().toString().split(";"))
@@ -84,6 +87,16 @@ public final class ImageFileMetadataUtils
         }
 
         return tagSet;
+    }
+
+    public static void saveWindowsExifMetadataTags(Asset entity)
+    {
+        File file = new File(entity.getPath());
+
+        if (ImageFileMetadataUtils.isValidImageFormat(file))
+        {
+            ImageFileMetadataUtils.saveWindowsExifMetadataTags(file, entity.getTags());
+        }
     }
 
     public static void saveWindowsExifMetadataTags(File imageFile, List<Tag> tags)

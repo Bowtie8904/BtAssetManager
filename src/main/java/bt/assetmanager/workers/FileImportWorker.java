@@ -4,9 +4,11 @@ import bt.assetmanager.constants.AssetManagerConstants;
 import bt.assetmanager.data.entity.ImageAsset;
 import bt.assetmanager.data.entity.SoundAsset;
 import bt.assetmanager.data.entity.Tag;
+import bt.assetmanager.data.entity.UserOption;
+import bt.assetmanager.data.service.UserOptionService;
+import bt.assetmanager.obj.FileBundler;
 import bt.assetmanager.util.metadata.FileMetadataUtils;
 import bt.assetmanager.views.import_.AssetImportRow;
-import bt.assetmanager.views.import_.ImportFileBundler;
 import bt.assetmanager.views.import_.ImportView;
 import bt.log.Log;
 import com.vaadin.flow.component.UI;
@@ -26,10 +28,12 @@ public class FileImportWorker implements BackgroundWorker
 {
     private ImportView importView;
     private Runnable onFinish;
+    private UserOptionService optionsService;
 
-    public FileImportWorker(ImportView importView)
+    public FileImportWorker(ImportView importView, UserOptionService optionsService)
     {
         this.importView = importView;
+        this.optionsService = optionsService;
     }
 
     public void onFinish(Runnable onFinish)
@@ -56,11 +60,11 @@ public class FileImportWorker implements BackgroundWorker
         // get selected rows for images and sounds
         List<AssetImportRow> selectedImages = this.importView.getImageFiles().stream()
                                                              .filter(AssetImportRow::isShouldImport)
-                                                             .collect(Collectors.toList());
+                                                             .toList();
 
         List<AssetImportRow> selectedSounds = this.importView.getSoundFiles().stream()
                                                              .filter(AssetImportRow::isShouldImport)
-                                                             .collect(Collectors.toList());
+                                                             .toList();
 
         int totalNumFiles = selectedImages.size() + selectedSounds.size();
         int processedFiles = 0;
@@ -68,16 +72,14 @@ public class FileImportWorker implements BackgroundWorker
         ui.access(() -> {
             this.importView.getProgressBar().setIndeterminate(true);
             this.importView.getProgressBar().setVisible(true);
-            this.importView.getProgressLabel().setText("Bundling files");
+            this.importView.getProgressLabel().setText("Bundling files...");
         });
 
-        ui.access(() -> {
-            Notification.show("Importing " + selectedImages.size() + " images and " + selectedSounds.size() + " sounds");
-        });
+        ui.access(() -> Notification.show("Importing " + selectedImages.size() + " images and " + selectedSounds.size() + " sounds"));
 
         Tag untaggedTag = this.importView.getTagService().obtainTag(AssetManagerConstants.UNTAGGED_TAG_NAME);
 
-        ImportFileBundler bundler = new ImportFileBundler();
+        FileBundler<AssetImportRow> bundler = new FileBundler<>();
 
         Log.info("Starting to bundle " + totalNumFiles + " files");
 
@@ -101,25 +103,39 @@ public class FileImportWorker implements BackgroundWorker
 
         Log.info("Starting to import " + totalNumFiles + " files");
 
+        boolean readFromMetadataFile = this.optionsService.getBooleanValue(UserOption.READ_TAGS_FROM_METADATA_FILE);
+        boolean writeToMetadataFile = this.optionsService.getBooleanValue(UserOption.SAVE_TAGS_IN_METADATA_FILE);
+
         for (String folder : bundler.getFolderNames())
         {
             ui.access(() -> this.importView.getProgressFolderLabel().setText(folder));
 
-            ImportFileBundler.Bundle bundle = bundler.getBundle(folder);
-            List<String> fileContent = FileMetadataUtils.getMetadataFileContent(folder);
+            var bundle = bundler.getBundle(folder);
+            List<String> fileContent = null;
+
+            if (readFromMetadataFile)
+            {
+                fileContent = FileMetadataUtils.getMetadataFileContent(folder);
+            }
 
             for (AssetImportRow row : bundle.getImageAssets())
             {
                 ImageAsset asset = new ImageAsset();
-                asset.setPath(row.getAbsolutePath());
+                asset.setPath(row.getPath());
                 asset.setFileName(row.getFileName());
-                asset.setTags(new ArrayList<>(getTagsForImportFile(tags, row, fileContent, untaggedTag)));
+
+                if (readFromMetadataFile)
+                {
+                    asset.setTags(new ArrayList<>(getTagsForImportFile(tags, row, fileContent, untaggedTag)));
+                }
+                else
+                {
+                    asset.setTags(tags);
+                }
 
                 this.importView.getImageService().save(asset, false);
                 Log.debug("Saved image asset " + asset.getPath());
 
-                this.importView.getImageFiles().remove(row);
-
                 processedFiles++;
 
                 if (processedFiles % 100 == 0)
@@ -127,18 +143,26 @@ public class FileImportWorker implements BackgroundWorker
                     updateProgress(totalNumFiles, processedFiles, ui);
                 }
             }
+
+            ui.access(() -> this.importView.getImageFiles().removeAll(bundle.getImageAssets()));
 
             for (AssetImportRow row : bundle.getSoundAssets())
             {
                 SoundAsset asset = new SoundAsset();
-                asset.setPath(row.getAbsolutePath());
+                asset.setPath(row.getPath());
                 asset.setFileName(row.getFileName());
-                asset.setTags(new ArrayList<>(getTagsForImportFile(tags, row, fileContent, untaggedTag)));
+
+                if (readFromMetadataFile)
+                {
+                    asset.setTags(new ArrayList<>(getTagsForImportFile(tags, row, fileContent, untaggedTag)));
+                }
+                else
+                {
+                    asset.setTags(tags);
+                }
 
                 this.importView.getSoundService().save(asset, false);
                 Log.debug("Saved sound asset " + asset.getPath());
-
-                this.importView.getSoundFiles().remove(row);
 
                 processedFiles++;
 
@@ -148,9 +172,14 @@ public class FileImportWorker implements BackgroundWorker
                 }
             }
 
-            Log.info("Saving metadata to file in " + folder);
-            FileMetadataUtils.overwriteMetadataFile(folder, fileContent);
-            Log.info("Done saving metadata to file in " + folder);
+            ui.access(() -> this.importView.getSoundFiles().removeAll(bundle.getSoundAssets()));
+
+            if (writeToMetadataFile)
+            {
+                Log.info("Saving metadata to file in " + folder);
+                FileMetadataUtils.overwriteMetadataFile(folder, fileContent);
+                Log.info("Done saving metadata to file in " + folder);
+            }
 
             updateProgress(totalNumFiles, processedFiles, ui);
         }

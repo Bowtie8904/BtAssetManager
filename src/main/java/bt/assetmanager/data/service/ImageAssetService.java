@@ -1,6 +1,7 @@
 package bt.assetmanager.data.service;
 
 import bt.assetmanager.data.entity.ImageAsset;
+import bt.assetmanager.data.repository.ImageAssetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

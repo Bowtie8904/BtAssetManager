@@ -1,4 +1,4 @@
-package bt.assetmanager.data.service;
+package bt.assetmanager.data.repository;
 
 import bt.assetmanager.data.entity.SoundFileEnding;
 import org.springframework.data.jpa.repository.JpaRepository;

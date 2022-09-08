@@ -1,6 +1,6 @@
 package bt.assetmanager.views.sounds;
 
-import bt.assetmanager.components.AssetView;
+import bt.assetmanager.components.assetview.AssetView;
 import bt.assetmanager.data.entity.SoundAsset;
 import bt.assetmanager.data.service.SoundAssetService;
 import bt.assetmanager.data.service.TagService;

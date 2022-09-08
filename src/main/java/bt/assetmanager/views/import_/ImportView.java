@@ -3,19 +3,22 @@ package bt.assetmanager.views.import_;
 import bt.assetmanager.components.AudioPlayer;
 import bt.assetmanager.components.ScrollTreeGrid;
 import bt.assetmanager.components.TagSearchTextField;
-import bt.assetmanager.constants.AssetManagerConstants;
-import bt.assetmanager.data.entity.*;
-import bt.assetmanager.data.service.*;
+import bt.assetmanager.data.repository.ImageFileEndingRepository;
+import bt.assetmanager.data.repository.SoundFileEndingRepository;
+import bt.assetmanager.data.repository.TempImageAssetRepository;
+import bt.assetmanager.data.repository.TempSoundAssetRepository;
+import bt.assetmanager.data.service.ImageAssetService;
+import bt.assetmanager.data.service.SoundAssetService;
+import bt.assetmanager.data.service.TagService;
 import bt.assetmanager.util.UIUtils;
-import bt.assetmanager.util.metadata.FileMetadataUtils;
 import bt.assetmanager.views.MainLayout;
-import bt.log.Log;
+import bt.assetmanager.workers.FileImportWorker;
+import bt.assetmanager.workers.FileSearchWorker;
 import com.vaadin.componentfactory.Autocomplete;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.dependency.Uses;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -26,7 +29,6 @@ import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
@@ -44,7 +46,9 @@ import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -126,6 +130,16 @@ public class ImportView extends Div
 
         this.imageGrid.setItems(this.imageFiles);
         this.soundGrid.setItems(this.soundFiles);
+    }
+
+    public static File getSelectedOriginDirectory()
+    {
+        return selectedOriginDirectory;
+    }
+
+    public static void setSelectedOriginDirectory(File selectedOriginDirectory)
+    {
+        ImportView.selectedOriginDirectory = selectedOriginDirectory;
     }
 
     private void selectOriginDirectory()
@@ -259,109 +273,7 @@ public class ImportView extends Div
 
         this.searchButton = new Button("Search");
         this.searchButton.addClickListener(e -> {
-            this.importButton.setEnabled(false);
-
-            this.lastCheckedImageRow = null;
-            this.lastCheckedSoundRow = null;
-
-            replaceImageEndings();
-            replaceSoundEndings();
-
-            this.imageFiles.clear();
-            this.soundFiles.clear();
-
-            List<TempImageAsset> tempImageFiles = new LinkedList<>();
-            List<TempSoundAsset> tempSoundFiles = new LinkedList<>();
-
-            if (this.directoryTextField.getValue().trim().isEmpty())
-            {
-                this.directoryTextField.setErrorMessage("Select a folder to search in");
-                this.directoryTextField.setInvalid(true);
-                return;
-            }
-
-            selectedOriginDirectory = new File(this.directoryTextField.getValue());
-
-            if (selectedOriginDirectory.exists() && !selectedOriginDirectory.isDirectory())
-            {
-                selectedOriginDirectory = selectedOriginDirectory.getParentFile();
-            }
-
-            if (!selectedOriginDirectory.exists())
-            {
-                Notification.show("Folder " + selectedOriginDirectory.getAbsolutePath() + " does not exist");
-                return;
-            }
-
-            fillFileGrids(selectedOriginDirectory, tempImageFiles, tempSoundFiles);
-
-            this.tempImageRepo.saveAll(tempImageFiles);
-            this.tempSoundRepo.saveAll(tempSoundFiles);
-
-            tempImageFiles = this.tempImageRepo.getAllNonExisting();
-            tempSoundFiles = this.tempSoundRepo.getAllNonExisting();
-
-            this.imageFiles = tempImageFiles.parallelStream().map(temp -> {
-                var row = new AssetImportRow();
-                row.setFileName(temp.getFileName());
-                row.setAbsolutePath(temp.getPath());
-                row.setRelativePath(temp.getPath().substring(selectedOriginDirectory.getAbsolutePath().length()));
-                return row;
-            }).collect(Collectors.toList());
-
-            this.soundFiles = tempSoundFiles.parallelStream().map(temp -> {
-                var row = new AssetImportRow();
-                row.setFileName(temp.getFileName());
-                row.setAbsolutePath(temp.getPath());
-                row.setRelativePath(temp.getPath().substring(selectedOriginDirectory.getAbsolutePath().length()));
-                return row;
-            }).collect(Collectors.toList());
-
-            this.tempImageRepo.deleteAll();
-            this.tempSoundRepo.deleteAll();
-
-            for (int i = 0; i < this.imageFiles.size(); i++)
-            {
-                var row = this.imageFiles.get(i);
-                row.setIndex(i);
-                createCheckBoxForRow(row);
-
-                row.getImportCheckbox().addClickListener(event -> {
-                    if (event.isShiftKey() && this.lastCheckedImageRow != null)
-                    {
-                        selectAllInRange(this.imageFiles, row.getIndex(), this.lastCheckedImageRow.getIndex());
-                    }
-
-                    this.lastCheckedImageRow = row;
-                });
-            }
-
-            for (int i = 0; i < this.soundFiles.size(); i++)
-            {
-                var row = this.soundFiles.get(i);
-                row.setIndex(i);
-                createCheckBoxForRow(row);
-
-                row.getImportCheckbox().addClickListener(event -> {
-                    if (event.isShiftKey() && this.lastCheckedSoundRow != null)
-                    {
-                        selectAllInRange(this.soundFiles, row.getIndex(), this.lastCheckedSoundRow.getIndex());
-                    }
-
-                    this.lastCheckedSoundRow = row;
-                });
-            }
-
-            this.imageCountLabel.setText(this.imageFiles.size() + " images found");
-            this.soundCountLabel.setText(this.soundFiles.size() + " sounds found");
-
-            this.imageGrid.setItems(this.imageFiles);
-            this.soundGrid.setItems(this.soundFiles);
-
-            this.importButton.setEnabled(!this.imageFiles.isEmpty() || !this.soundFiles.isEmpty());
-
-            this.imageGrid.scrollToStart();
-            this.soundGrid.scrollToStart();
+            searchFiles();
         });
 
         this.selectAllImportCheckboxButton = new Button("Import all");
@@ -441,27 +353,43 @@ public class ImportView extends Div
         splitLayout.addToSecondary(layoutDiv);
     }
 
-    public void selectAllInRange(List<AssetImportRow> rows, int index1, int index2)
+    private void searchFiles()
     {
-        int min = Math.min(index1, index2);
-        int max = Math.max(index1, index2);
+        this.importButton.setEnabled(false);
+        this.searchButton.setEnabled(false);
+        this.selectAllImportCheckboxButton.setEnabled(false);
+        this.deselectAllImportCheckboxButton.setEnabled(false);
+        this.browseOriginButton.setEnabled(false);
 
-        for (int i = min; i <= max; i++)
-        {
-            rows.get(i).checkImportBox(true);
-        }
-    }
+        UI.getCurrent().setPollInterval(500);
+        UI ui = UI.getCurrent();
 
-    private void createCheckBoxForRow(AssetImportRow row)
-    {
-        Checkbox checkbox = new Checkbox();
-        checkbox.setValue(row.isShouldImport());
+        executorService.submit(() -> {
+            var worker = new FileSearchWorker(this);
 
-        checkbox.addValueChangeListener(event -> {
-            row.setShouldImport(event.getValue());
+            worker.onFinish(() -> {
+                this.progressBar.setVisible(false);
+                this.progressFolderLabel.setText("");
+                this.progressLabel.setText("");
+
+                this.imageCountLabel.setText(this.imageFiles.size() + " images found");
+                this.soundCountLabel.setText(this.soundFiles.size() + " sounds found");
+
+                this.imageGrid.setItems(this.imageFiles);
+                this.soundGrid.setItems(this.soundFiles);
+
+                this.importButton.setEnabled(!this.imageFiles.isEmpty() || !this.soundFiles.isEmpty());
+                this.searchButton.setEnabled(true);
+                this.selectAllImportCheckboxButton.setEnabled(true);
+                this.deselectAllImportCheckboxButton.setEnabled(true);
+                this.browseOriginButton.setEnabled(true);
+
+                this.imageGrid.scrollToStart();
+                this.soundGrid.scrollToStart();
+            });
+
+            worker.work(ui);
         });
-
-        row.setImportCheckbox(checkbox);
     }
 
     private void importFiles()
@@ -478,136 +406,9 @@ public class ImportView extends Div
         UI ui = UI.getCurrent();
 
         executorService.submit(() -> {
-            List<Tag> tags = new ArrayList<>();
+            var worker = new FileImportWorker(this);
 
-            // get tags from tag field in case there are any
-            for (String tag : this.applyTagsTextField.getValue().trim().split(","))
-            {
-                tag = tag.trim();
-
-                if (!tag.isEmpty())
-                {
-                    tags.add(this.tagService.obtainTag(tag));
-                }
-            }
-
-            // get selected rows for images and sounds
-            List<AssetImportRow> selectedImages = this.imageFiles.stream()
-                                                                 .filter(AssetImportRow::isShouldImport)
-                                                                 .collect(Collectors.toList());
-
-            List<AssetImportRow> selectedSounds = this.soundFiles.stream()
-                                                                 .filter(AssetImportRow::isShouldImport)
-                                                                 .collect(Collectors.toList());
-
-            int totalNumFiles = selectedImages.size() + selectedSounds.size();
-            int processedFiles = 0;
-
-            ui.access(() -> {
-                this.progressBar.setIndeterminate(true);
-                this.progressBar.setVisible(true);
-                this.progressLabel.setText("Bundling files");
-            });
-
-            ui.access(() -> {
-                Notification.show("Importing " + selectedImages.size() + " images and " + selectedSounds.size() + " sounds");
-            });
-
-            Tag untaggedTag = this.tagService.obtainTag(AssetManagerConstants.UNTAGGED_TAG_NAME);
-
-            ImportFileBundler bundler = new ImportFileBundler();
-
-            Log.info("Starting to bundle " + totalNumFiles + " files");
-
-            for (AssetImportRow row : selectedImages)
-            {
-                bundler.addImage(row);
-            }
-
-            for (AssetImportRow row : selectedSounds)
-            {
-                bundler.addSound(row);
-            }
-
-            Log.info("Done bundling " + totalNumFiles + " files into " + bundler.getFolderNames().size() + " folders");
-
-            ui.access(() -> {
-                this.progressBar.setIndeterminate(false);
-                this.progressBar.setValue(0);
-                this.progressLabel.setText("Importing...    0 / " + totalNumFiles + " (0%)");
-            });
-
-            Log.info("Starting to import " + totalNumFiles + " files");
-
-            for (String folder : bundler.getFolderNames())
-            {
-                ui.access(() -> this.progressFolderLabel.setText(folder));
-
-                ImportFileBundler.Bundle bundle = bundler.getBundle(folder);
-                List<String> fileContent = FileMetadataUtils.getMetadataFileContent(folder);
-
-                for (AssetImportRow row : bundle.getImageAssets())
-                {
-                    ImageAsset asset = new ImageAsset();
-                    asset.setPath(row.getAbsolutePath());
-                    asset.setFileName(row.getFileName());
-                    asset.setTags(new ArrayList<>(getTagsForImportFile(tags, row, fileContent, untaggedTag)));
-
-                    this.imageService.save(asset, false);
-                    Log.info("Saved image asset " + asset.getPath());
-
-                    this.imageFiles.remove(row);
-
-                    processedFiles++;
-
-                    if (processedFiles % 100 == 0)
-                    {
-                        updateProgress(totalNumFiles, processedFiles, ui);
-                    }
-                }
-
-                for (AssetImportRow row : bundle.getSoundAssets())
-                {
-                    SoundAsset asset = new SoundAsset();
-                    asset.setPath(row.getAbsolutePath());
-                    asset.setFileName(row.getFileName());
-                    asset.setTags(new ArrayList<>(getTagsForImportFile(tags, row, fileContent, untaggedTag)));
-
-                    this.soundService.save(asset, false);
-                    Log.info("Saved sound asset " + asset.getPath());
-
-                    this.soundFiles.remove(row);
-
-                    processedFiles++;
-
-                    if (processedFiles % 100 == 0)
-                    {
-                        updateProgress(totalNumFiles, processedFiles, ui);
-                    }
-                }
-
-                Log.info("Saving metadata to file in " + folder);
-                FileMetadataUtils.overwriteMetadataFile(folder, fileContent);
-                Log.info("Done saving metadata to file in " + folder);
-
-                updateProgress(totalNumFiles, processedFiles, ui);
-            }
-
-            Log.info("Done importing " + totalNumFiles + " files");
-
-            for (int i = 0; i < this.imageFiles.size(); i++)
-            {
-                var row = this.imageFiles.get(i);
-                row.setIndex(i);
-            }
-
-            for (int i = 0; i < this.soundFiles.size(); i++)
-            {
-                var row = this.soundFiles.get(i);
-                row.setIndex(i);
-            }
-
-            ui.access(() -> {
+            worker.onFinish(() -> {
                 this.progressBar.setVisible(false);
                 this.importButton.setEnabled(true);
                 this.searchButton.setEnabled(true);
@@ -622,128 +423,8 @@ public class ImportView extends Div
                 this.progressLabel.setText("");
             });
 
-            ui.setPollInterval(-1);
+            worker.work(ui);
         });
-    }
-
-    private void updateProgress(int totalNumFiles, int processedFiles, UI ui)
-    {
-        double completion = processedFiles / (double)totalNumFiles;
-        ui.access(() -> {
-            this.progressBar.setValue(completion);
-            this.progressLabel.setText("Importing...    " + processedFiles + " / " + totalNumFiles + " (" + (int)(completion * 100) + "%)");
-        });
-    }
-
-    private Set<Tag> getTagsForImportFile(List<Tag> startTags, AssetImportRow row, List<String> fileContent, Tag untaggedTag)
-    {
-        Set<Tag> tagSet = new HashSet<>(startTags);
-
-        boolean found = false;
-        int index = -1;
-
-        for (int i = 0; i < fileContent.size(); i++)
-        {
-            String line = fileContent.get(i);
-
-            if (FileMetadataUtils.lineMatch(row.getFileName(), line))
-            {
-                for (String tag : FileMetadataUtils.getTagsFromLine(line))
-                {
-                    tagSet.add(this.tagService.obtainTag(tag.trim()));
-                }
-
-                index = i;
-                found = true;
-                break;
-            }
-        }
-
-        if (tagSet.isEmpty())
-        {
-            tagSet.add(untaggedTag);
-        }
-
-        String tagString = tagSet.stream()
-                                 .map(Tag::getName)
-                                 .collect(Collectors.joining(","));
-
-        String lineContent = row.getFileName() + ": " + tagString;
-
-        if (found)
-        {
-            fileContent.set(index, lineContent);
-        }
-        else
-        {
-            fileContent.add(lineContent);
-        }
-
-        return tagSet;
-    }
-
-    private void fillFileGrids(File root, List<TempImageAsset> tempImageFiles, List<TempSoundAsset> tempSoundFiles)
-    {
-        for (File file : root.listFiles())
-        {
-            if (file.isDirectory())
-            {
-                fillFileGrids(file, tempImageFiles, tempSoundFiles);
-            }
-            else
-            {
-                if (file.getName().lastIndexOf(".") > -1)
-                {
-                    String fileEnding = file.getName().substring(file.getName().lastIndexOf(".") + 1);
-
-                    if (this.imageFileEndings.contains(fileEnding.toLowerCase().trim()))
-                    {
-                        var asset = new TempImageAsset();
-                        asset.setPath(file.getAbsolutePath());
-                        asset.setFileName(file.getName());
-                        tempImageFiles.add(asset);
-                    }
-                    else if (this.soundFileEndings.contains(fileEnding.toLowerCase().trim()))
-                    {
-                        var asset = new TempSoundAsset();
-                        asset.setPath(file.getAbsolutePath());
-                        asset.setFileName(file.getName());
-                        tempSoundFiles.add(asset);
-
-                    }
-                }
-            }
-        }
-    }
-
-    private void replaceImageEndings()
-    {
-        this.imageFileEndingRepo.deleteAll();
-        String[] endings = this.imageFileEndingsTextField.getValue().split(",");
-
-        for (String ending : endings)
-        {
-            var imageEnding = new ImageFileEnding();
-            imageEnding.setEnding(ending.trim().toLowerCase());
-            this.imageFileEndingRepo.save(imageEnding);
-        }
-
-        this.imageFileEndings = this.imageFileEndingRepo.findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList());
-    }
-
-    private void replaceSoundEndings()
-    {
-        this.soundFileEndingRepo.deleteAll();
-        String[] endings = this.soundFileEndingsTextField.getValue().split(",");
-
-        for (String ending : endings)
-        {
-            var soundEnding = new SoundFileEnding();
-            soundEnding.setEnding(ending.trim().toLowerCase());
-            this.soundFileEndingRepo.save(soundEnding);
-        }
-
-        this.soundFileEndings = this.soundFileEndingRepo.findAll().stream().map(end -> end.getEnding()).collect(Collectors.toList());
     }
 
     private void createImageGrid(SplitLayout splitLayout)
@@ -828,5 +509,155 @@ public class ImportView extends Div
         wrapper.setClassName("grid-wrapper");
         splitLayout.addToSecondary(wrapper);
         wrapper.add(this.soundGrid);
+    }
+
+    public Grid<AssetImportRow> getImageGrid()
+    {
+        return imageGrid;
+    }
+
+    public Grid<AssetImportRow> getSoundGrid()
+    {
+        return soundGrid;
+    }
+
+    public ImageAssetService getImageService()
+    {
+        return imageService;
+    }
+
+    public SoundAssetService getSoundService()
+    {
+        return soundService;
+    }
+
+    public TagService getTagService()
+    {
+        return tagService;
+    }
+
+    public List<AssetImportRow> getSoundFiles()
+    {
+        return soundFiles;
+    }
+
+    public void setSoundFiles(List<AssetImportRow> soundFiles)
+    {
+        this.soundFiles = soundFiles;
+    }
+
+    public List<AssetImportRow> getImageFiles()
+    {
+        return imageFiles;
+    }
+
+    public void setImageFiles(List<AssetImportRow> imageFiles)
+    {
+        this.imageFiles = imageFiles;
+    }
+
+    public Autocomplete getApplyTagsTextField()
+    {
+        return applyTagsTextField;
+    }
+
+    public Label getImageCountLabel()
+    {
+        return imageCountLabel;
+    }
+
+    public Label getSoundCountLabel()
+    {
+        return soundCountLabel;
+    }
+
+    public ProgressBar getProgressBar()
+    {
+        return progressBar;
+    }
+
+    public Label getProgressLabel()
+    {
+        return progressLabel;
+    }
+
+    public Label getProgressFolderLabel()
+    {
+        return progressFolderLabel;
+    }
+
+    public AssetImportRow getLastCheckedImageRow()
+    {
+        return lastCheckedImageRow;
+    }
+
+    public void setLastCheckedImageRow(AssetImportRow lastCheckedImageRow)
+    {
+        this.lastCheckedImageRow = lastCheckedImageRow;
+    }
+
+    public AssetImportRow getLastCheckedSoundRow()
+    {
+        return lastCheckedSoundRow;
+    }
+
+    public void setLastCheckedSoundRow(AssetImportRow lastCheckedSoundRow)
+    {
+        this.lastCheckedSoundRow = lastCheckedSoundRow;
+    }
+
+    public TempImageAssetRepository getTempImageRepo()
+    {
+        return tempImageRepo;
+    }
+
+    public TempSoundAssetRepository getTempSoundRepo()
+    {
+        return tempSoundRepo;
+    }
+
+    public ImageFileEndingRepository getImageFileEndingRepo()
+    {
+        return imageFileEndingRepo;
+    }
+
+    public SoundFileEndingRepository getSoundFileEndingRepo()
+    {
+        return soundFileEndingRepo;
+    }
+
+    public List<String> getSoundFileEndings()
+    {
+        return soundFileEndings;
+    }
+
+    public void setSoundFileEndings(List<String> soundFileEndings)
+    {
+        this.soundFileEndings = soundFileEndings;
+    }
+
+    public List<String> getImageFileEndings()
+    {
+        return imageFileEndings;
+    }
+
+    public void setImageFileEndings(List<String> imageFileEndings)
+    {
+        this.imageFileEndings = imageFileEndings;
+    }
+
+    public TextField getDirectoryTextField()
+    {
+        return directoryTextField;
+    }
+
+    public TextField getImageFileEndingsTextField()
+    {
+        return imageFileEndingsTextField;
+    }
+
+    public TextField getSoundFileEndingsTextField()
+    {
+        return soundFileEndingsTextField;
     }
 }

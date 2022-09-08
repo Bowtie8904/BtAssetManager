@@ -1,6 +1,6 @@
 package bt.assetmanager.views.images;
 
-import bt.assetmanager.components.AssetView;
+import bt.assetmanager.components.assetview.AssetView;
 import bt.assetmanager.data.entity.ImageAsset;
 import bt.assetmanager.data.service.ImageAssetService;
 import bt.assetmanager.data.service.TagService;

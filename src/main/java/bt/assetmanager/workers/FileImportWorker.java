@@ -136,8 +136,6 @@ public class FileImportWorker implements BackgroundWorker
                 this.importView.getImageService().save(asset, false);
                 Log.debug("Saved image asset " + asset.getPath());
 
-                this.importView.getImageFiles().remove(row);
-
                 processedFiles++;
 
                 if (processedFiles % 100 == 0)
@@ -145,6 +143,8 @@ public class FileImportWorker implements BackgroundWorker
                     updateProgress(totalNumFiles, processedFiles, ui);
                 }
             }
+
+            ui.access(() -> this.importView.getImageFiles().removeAll(bundle.getImageAssets()));
 
             for (AssetImportRow row : bundle.getSoundAssets())
             {
@@ -164,8 +164,6 @@ public class FileImportWorker implements BackgroundWorker
                 this.importView.getSoundService().save(asset, false);
                 Log.debug("Saved sound asset " + asset.getPath());
 
-                this.importView.getSoundFiles().remove(row);
-
                 processedFiles++;
 
                 if (processedFiles % 100 == 0)
@@ -173,6 +171,8 @@ public class FileImportWorker implements BackgroundWorker
                     updateProgress(totalNumFiles, processedFiles, ui);
                 }
             }
+
+            ui.access(() -> this.importView.getSoundFiles().removeAll(bundle.getSoundAssets()));
 
             if (writeToMetadataFile)
             {

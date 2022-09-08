@@ -7,8 +7,10 @@ import bt.assetmanager.data.entity.UserOption;
 import bt.assetmanager.data.service.AssetService;
 import bt.assetmanager.data.service.TagService;
 import bt.assetmanager.data.service.UserOptionService;
+import bt.log.Log;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,11 +25,13 @@ public class AssetView<T extends Asset> extends SplitLayout
     private Class<T> clazz;
     private transient List<T> items = new ArrayList<>();
     private UserOptionService optionsService;
+    private AssetService<T> assetService;
 
     public AssetView(Class<T> clazz, AssetService<T> assetService, TagService tagService, UserOptionService optionsService)
     {
         this.clazz = clazz;
         this.optionsService = optionsService;
+        this.assetService = assetService;
 
         boolean showGridView = this.clazz.equals(ImageAsset.class) && this.optionsService.getValue(UserOption.IMAGE_GRID_OR_LIST_VIEW).equals("grid");
         boolean saveTagsInMetadata = this.optionsService.getBooleanValue(UserOption.SAVE_TAGS_IN_FILE_FORMAT_METADATA);
@@ -70,10 +74,7 @@ public class AssetView<T extends Asset> extends SplitLayout
         this.grid = new AssetGridDisplay<>(this.clazz,
                                            this.optionsService.getIntValue(UserOption.IMAGE_GRID_IMAGES_PER_ROW),
                                            this.optionsService.getBooleanValue(UserOption.IMAGE_GRID_KEEP_ASPECT_RATIO));
-        this.assetSearchPanel.onSearch(list -> {
-            this.items = list;
-            this.grid.setItems(list);
-        });
+        this.assetSearchPanel.onSearch(this::setItems);
         this.grid.onElementSelection(element -> this.assetSearchPanel.setSelectedElement(element));
         addToPrimary(this.grid);
     }
@@ -81,10 +82,7 @@ public class AssetView<T extends Asset> extends SplitLayout
     protected void createListView()
     {
         this.grid = new AssetListDisplay<>(this.clazz);
-        this.assetSearchPanel.onSearch(list -> {
-            this.items = list;
-            this.grid.setItems(list);
-        });
+        this.assetSearchPanel.onSearch(this::setItems);
         this.grid.onElementSelection(element -> this.assetSearchPanel.setSelectedElement(element));
 
         ((AssetListDisplay<T>)this.grid).onElementPlay(element -> {
@@ -92,5 +90,30 @@ public class AssetView<T extends Asset> extends SplitLayout
             this.assetSearchPanel.playSound();
         });
         addToPrimary(this.grid);
+    }
+
+    private void setItems(List<T> items)
+    {
+        if (this.optionsService.getBooleanValue(UserOption.REMOVE_ASSETS_FROM_TOOL_IF_THEY_CANT_BE_FOUND))
+        {
+            items = items.stream()
+                         .filter(asset -> {
+                             File assetFile = new File(asset.getPath());
+
+                             if (assetFile.exists())
+                             {
+                                 return true;
+                             }
+                             else
+                             {
+                                 this.assetService.delete(asset);
+                                 Log.info("Deleted asset " + asset.getPath() + " because the file no longer exists");
+                                 return false;
+                             }
+                         }).toList();
+        }
+
+        this.items = items;
+        this.grid.setItems(items);
     }
 }

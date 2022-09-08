@@ -14,6 +14,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Lukas Hartwig
@@ -92,7 +93,7 @@ public class FileSearchWorker implements BackgroundWorker
             row.setAbsolutePath(temp.getPath());
             row.setRelativePath(temp.getPath().substring(this.importView.getSelectedOriginDirectory().getAbsolutePath().length()));
             return row;
-        }).toList());
+        }).collect(Collectors.toList()));
 
         this.importView.setSoundFiles(tempSoundFiles.parallelStream().map(temp -> {
             var row = new AssetImportRow();
@@ -100,7 +101,7 @@ public class FileSearchWorker implements BackgroundWorker
             row.setAbsolutePath(temp.getPath());
             row.setRelativePath(temp.getPath().substring(this.importView.getSelectedOriginDirectory().getAbsolutePath().length()));
             return row;
-        }).toList());
+        }).collect(Collectors.toList()));
 
         this.importView.getTempImageRepo().deleteAll();
         this.importView.getTempSoundRepo().deleteAll();
